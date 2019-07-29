@@ -11,7 +11,7 @@ serde = "1.0"
 serde_derive = "1.0"
 bincode = "1.1.4"
 
-#ERROR HANDLING
+#RESPONSES AND ERROR HANDLING
 failure = "0.1.5"
 
 #ENCRYPTION AND AUTHENTICATION PRNG
