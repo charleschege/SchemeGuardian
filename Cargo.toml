@@ -12,6 +12,7 @@ serde_derive = "1.0"
 bincode = "1.1.4"
 
 #RESPONSES AND ERROR HANDLING
+custom_codes = { path = "../custom_codes" }
 failure = "0.1.5"
 
 #ENCRYPTION AND AUTHENTICATION PRNG
