@@ -1,6 +1,6 @@
 [package]
 name = "scheme_guardian"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 authors = ["Charles Chege <charleschege@protonmail.ch>"]
 edition = "2018"
 
@@ -40,11 +40,12 @@ secstr = "0.3.2"
 zeroize = "0.9.2"
 clear_on_drop = "0.2.3"
 
-#KV STORE
-sled = { path = "../../lib/sled/crates/sled" }
 
 #COMPRESSIONS
-lz4 = "1.23.1"
+#lz4 = "1.23.1"
+
+#KV STORE
+sled = { path = "../../lib/sled/crates/sled" }
 
 ### OPTIONAL
 
