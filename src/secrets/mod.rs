@@ -9,3 +9,7 @@ pub mod branca_engine;
 pub use csprng::random64alpha;
     /// Contains methods generating Cryptographically Secure Psuedo-Random Numbers stored in a Secret<String>
 pub mod csprng;
+
+pub use passphrase_engine::Passphrase;
+    /// Contains all methods for handling passphrases
+pub mod passphrase_engine;
