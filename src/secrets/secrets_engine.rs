@@ -1,11 +1,15 @@
 use serde_derive::{Serialize, Deserialize};
 use chrono::prelude::*;
-use sled::{Db, IVec};
+use sled::Db;
 use secrecy::{Secret, ExposeSecret, CloneableSecret, DebugSecret};
 use zeroize::Zeroize;
 
 use crate::SGError;
 use crate::secrets;
+
+fn sg_auth() -> &'static str {
+    "./SchemeGuardianDB/SG_AUTH"
+}
 
 #[derive(Debug, Clone, Zeroize, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -24,91 +28,242 @@ impl Default for SGSecret {
     fn default() -> Self{ Self(String::default()) }
 }
 
+    /// `Role` of the user
 #[derive(Debug, Serialize, Deserialize)]
-struct BrancaPayload<Attr> {
-    bearer: SGSecret,
-    attr: Option<Attr>,
+pub enum Role {
+        /// The user with all access rights
+    SuperUser,
+        /// A user with some administrative rights
+    Admin,
+        /// A normal user
+    User,
+        /// A custom role for the user
+    CustomRole(String),
 }
 
+impl Default for Role {
+    fn default() -> Self{ Role::User }
+}
+
+    /// `Target` is the resource being requested
 #[derive(Debug, Serialize, Deserialize)]
-struct SecondaryIndex {
-    bearer: SGSecret,
+pub enum Target {
+        /// A custom role for the user
+    CustomTarget(String),
+}
+
+impl Default for Target {
+    fn default() -> Self{ Target::CustomTarget(Default::default()) }
+}
+
+    /// `AuthPayload` creates and authenticates auth values
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AuthPayload {
+    role: Role,
+    target: Target,
     lease: Lease,
+    random_key: String,
 }
 
-    /// `BrancaEngine` creates and authenticates branca secrets
+    /// `AuthEngine` creates and authenticates authorization/authentication secrets
 #[derive(Debug, Serialize, Deserialize)]
-pub struct BrancaEngine<Attr> {
-    secret: BrancaPayload<Attr>,
-    index: SecondaryIndex,
+pub struct AuthEngine {
+    bearer: SGSecret,
+    payload: AuthPayload,
 }
 
-impl<'a, Attr> BrancaEngine<Attr> {
-        /// Initialize a BrancaEngine for creating and authenticating branca secrets
+impl AuthEngine where {
+        /// Initialize a AuthEngine for creating and authenticating branca secrets
     pub fn new() -> Self {
-        Self {
-            secret: BrancaPayload {
-                bearer: Default::default(),
-                attr: Default::default(),
-            },
-            index: SecondaryIndex { bearer: Default::default(), lease: Default::default(), }
+        Self { 
+            bearer: Default::default(), 
+            payload: AuthPayload {
+                role: Default::default(), 
+                target: Default::default(), 
+                lease: Default::default(),
+                random_key: secrets::random64alpha().expose_secret().to_owned(),
+            }
         }
     }
         /// The username or client name  
     pub fn bearer(mut self, bearer: Secret<String>) -> Self {
-        self.secret.bearer = SGSecret(bearer.expose_secret().clone().to_owned());
-        self.index.bearer = SGSecret(bearer.expose_secret().to_owned());
+        self.bearer = SGSecret(bearer.expose_secret().clone().to_owned());
+        
+        self
+    }
+        /// The role of the client  
+    pub fn role(mut self, role: Role) -> Self {
+        self.payload.role = role;
         
         self
     }
         /// The expiry date or time for the secret
     pub fn expiry(mut self, expiry: chrono::Duration) -> Self  {
-        self.index.lease = Lease::DateExpiry(Utc::now() + expiry);
+        self.payload.lease = Lease::DateExpiry(Utc::now() + expiry);
         
         self
     }
-        /// The properties of the secret like `Roles` 
-    pub fn attributes(mut self, attr: Option<Attr>) -> Self where Attr: zeroize::Zeroize {
-        self.secret.attr = if let Some(inner) = attr{ Some(inner)} else { None };
+        /// Target for the operation
+    pub fn target(mut self, attr: Target) -> Self {
+        self.payload.random_key = secrets::random64alpha().expose_secret().to_owned();
+        self.payload.target = attr;
         
         self
     }
 
         /// Insert new token
-    pub fn insert(self, path: &str) -> Result<(Secret<String>, Option<IVec>), SGError> where Attr: serde::Serialize {
-        let db = Db::start_default(path)?;
-        let raw_secret = serde_json::to_string(&self.secret)?;
-        let encrypted = secrets::branca_encode(Secret::new(raw_secret))?;
-            // Serialize from `ron` string
-        let key = bincode::serialize(&encrypted.expose_secret())?; 
-        let value = bincode::serialize::<SecondaryIndex>(&self.index)?; //TODO: Should I encrypt bearer with branca in index
+    pub fn insert(self) -> Result<(custom_codes::DbOps, Secret<String>, Option<AuthPayload>), SGError> {
+        let auth_db = sg_auth();
+        let db = Db::start_default(auth_db)?;
+
+        let key = bincode::serialize(&self.bearer.0)?; 
+        dbg!(&self.payload.random_key);
+
+        let value = bincode::serialize::<AuthPayload>(&self.payload)?; //TODO: Should I encrypt bearer with branca in index
 
         let dbop = db.insert(key, value)?;
 
-        let mut sled_vec = vec![];
+        let bearer_key = self.bearer.0.clone() + ":::" + &self.payload.random_key;
 
-        db.iter().keys().for_each(|inner| sled_vec.push(inner));
-        /*
-        for inner in sled_vec {
-            dbg!(bincode::deserialize::<String>(&inner?)?);
-        }*/
-        Ok((encrypted, dbop))
-        
+        if let Some(updated) = dbop {
+            let data = bincode::deserialize::<AuthPayload>(&updated)?;
+            Ok((custom_codes::DbOps::Modified, Secret::new(bearer_key), Some(data)))
+        }else {
+            Ok((custom_codes::DbOps::Inserted, Secret::new(bearer_key), None))
+        }        
     }
+        
         /// Authenticate an existing token
-    pub fn authenticate(self, path: &str, raw_key: Secret<String>) -> Result<(custom_codes::DbOps, Option<IVec>), SGError> {
-        let key = raw_key.expose_secret().as_bytes();
-        let db = Db::start_default(path)?;
+    pub fn get(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps, Option<Payload>), SGError> {
+        let auth_db = sg_auth();
+        let db = Db::start_default(auth_db)?;
+
+        let raw_key = raw_key.expose_secret();
+        let dual = raw_key.split(":::").collect::<Vec<&str>>();
+        let key = bincode::serialize(dual[0])?;
+
         let check_key = db.get(key)?;
 
         if let Some(binary) = check_key {
-            Ok((custom_codes::DbOps::KeyFound, Some(binary)))
+            let data = bincode::deserialize::<AuthPayload>(&binary)?;
+            Ok((custom_codes::DbOps::KeyFound, Some((data.role, data.target))))
         }else {
             Ok((custom_codes::DbOps::KeyNotFound, None))
         } 
     }
+        
+        /// Authenticate an existing token
+        /// Currently returns:
+        ///     `custom_codes::AccessStatus::Expired` for an secret that has reached end of life
+        ///     `custom_codes::AccessStatus::Granted` for a secret that is live and RAC is authenticated
+        ///     `custom_codes::AccessStatus::RejectedRAC` for a secret that is live but the RAC is not authentic
+        ///     `custom_codes::AccessStatus::Rejected` for a secret that cannot be authenticated
+    pub fn authenticate(self, raw_key: Secret<String>) -> Result<(custom_codes::AccessStatus, Option<Payload>), SGError> {
+        let auth_db = sg_auth();
+        let db = Db::start_default(auth_db)?;
+
+        let raw_key = raw_key.expose_secret();
+        let dual = raw_key.split(":::").collect::<Vec<&str>>();
+
+        let key = bincode::serialize(dual[0])?;
+        let user_random_key = dual[1];
+
+        let check_key = db.get(key)?;
+
+        if let Some(binary) = check_key {
+            let payload = bincode::deserialize::<AuthPayload>(&binary)?;
+            match payload.lease {
+                Lease::DateExpiry(datetime) => {
+                    if Utc::now() > datetime {
+                        Ok((custom_codes::AccessStatus::Expired, None))
+                    }else {
+                        if payload.random_key == user_random_key {
+                            Ok((custom_codes::AccessStatus::Granted, Some((payload.role, payload.target))))
+                        }else {
+                            Ok((custom_codes::AccessStatus::RejectedRAC, None))
+                        }
+                    }
+                },
+                Lease::Lifetime => Ok((custom_codes::AccessStatus::Granted, Some((payload.role, payload.target)))),
+                _ => Ok((custom_codes::AccessStatus::Rejected, None))
+            }            
+        }else {
+            Ok((custom_codes::AccessStatus::Rejected, None))
+        } 
+    }
+
+        /// Remove a secret from the database
+    pub fn rm(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps, Option<FullPayload>), SGError> {
+        let auth_db = sg_auth();
+        let db = Db::start_default(auth_db)?;
+
+        let raw_key = raw_key.expose_secret();
+        let dual = raw_key.split(":::").collect::<Vec<&str>>();
+        dbg!(&dual[0]);
+        let key = bincode::serialize(dual[0])?;
+
+        let check_key = db.remove(key)?;
+
+        if let Some(binary) = check_key {
+            let data = bincode::deserialize::<AuthPayload>(&binary)?;
+            Ok((custom_codes::DbOps::Deleted, Some((data.role, data.lease, data.target, data.random_key))))
+        }else {
+            Ok((custom_codes::DbOps::KeyNotFound, None))
+        } 
+    }
+
+       /// Show all database entries
+    pub fn list_keys(self) -> Result<Vec<u8>, SGError> {
+        let auth_db = sg_auth();
+        let db = Db::start_default(auth_db)?;
+        
+        let mut sled_vec = vec![];
+
+        db.iter().keys().for_each(|data| {
+            if let Ok(inner) = data {
+                sled_vec.push(inner);
+            }else {
+                sled_vec.clear();
+            }
+        });
+
+
+        dbg!(sled_vec.into_iter().map(|data| {
+            bincode::deserialize::<String>(&data)
+        }).collect::<Vec<_>>());
+
+        Ok(vec![])
+    }
+    
+       /// Show all database entries
+    pub fn list_values(self) -> Result<Vec<u8>, SGError> {
+        let auth_db = sg_auth();
+        let db = Db::start_default(auth_db)?;
+        
+        let mut sled_vec = vec![];
+
+        db.iter().values().for_each(|data| {
+            if let Ok(inner) = data {
+                sled_vec.push(inner);
+            }else {
+                sled_vec.clear();
+            }
+        });
+
+
+        dbg!(sled_vec.into_iter().map(|data| {
+            bincode::deserialize::<AuthPayload>(&data)
+        }).collect::<Vec<_>>());
+
+        Ok(vec![])
+    }
 }
 
+    /// A return value to an of the operation. It `contains the payload of the AuthPayload` from `AuthEngine`
+pub type FullPayload = (Role, Lease, Target, String);
+
+    /// A return value to an of the operation. It contains the payload of the AuthPayload values `Role` & `Target`
+pub type Payload = (Role, Target);
 
     /// A an expiry date to lease a secret
 #[derive(Debug, Serialize, Deserialize, PartialEq, PartialOrd, Clone, Eq)]

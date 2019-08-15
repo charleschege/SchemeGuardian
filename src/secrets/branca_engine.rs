@@ -3,7 +3,7 @@ use rand::distributions::Alphanumeric;
 use rand::{Rng, thread_rng};
 use crate::SG_BRANCA_KEY;
 use crate::SGError;
-use branca::{Branca, encode, decode};
+use branca::Branca;
 use std::iter;
 use std::convert::TryInto;
 

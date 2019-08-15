@@ -4,7 +4,7 @@ version = "0.1.0-alpha.1"
 authors = ["Charles Chege <charleschege@protonmail.ch>"]
 edition = "2018"
 
-license = "BSD-3-Clause"
+license = "Apache-2.0"
 
 [dependencies]
 
@@ -36,13 +36,12 @@ toml = "0.5.1"
 #deque = "0.3.2"
 
 # SCHEDULER
-priority-queue = "0.5.4"
+#bucket_queue = "2.0.0"
 #evmap = "4.2.2"
 
 #SECURE MEMORY
 secrecy = { version = "0.2.2", features=["serde"] }
 untrusted = "0.6.2"
-#secstr = "0.3.2"
 zeroize = "0.9.2"
 
 #TIME/DATE

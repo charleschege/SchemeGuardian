@@ -12,6 +12,9 @@ pub enum SGError {
         /// Bincode error handling for `bincode::Error` errors
     #[fail(display = "{}", _0)]
     BincodeError(#[cause] bincode::Error),
+        /// Str error handling for `str::FromUtf8Error` errors
+    #[fail(display = "{}", _0)]
+    StrUtf8Error(#[cause] std::str::Utf8Error),
         /// String error handling for `string::FromUtf8Error` errors
     #[fail(display = "{}", _0)]
     StringUtf8Error(#[cause] std::string::FromUtf8Error),
@@ -38,6 +41,12 @@ impl std::convert::From<sled::Error> for SGError {
 impl std::convert::From<bincode::Error> for SGError {
     fn from(error: bincode::Error) -> Self {
         SGError::BincodeError(error)
+    }
+}
+
+impl std::convert::From<std::str::Utf8Error> for SGError {
+    fn from(error: std::str::Utf8Error) -> Self {
+        SGError::StrUtf8Error(error)
     }
 }
 
