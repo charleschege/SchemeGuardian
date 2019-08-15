@@ -27,6 +27,12 @@ pub enum SGError {
         /// String error handling for `argon2::error::Error` errors
     #[fail(display = "{}", _0)]
     Argon2Error(#[cause] argon2::Error),
+        /// Error when passphrase length is zero in size
+    #[fail(display = "[PASSPHRASE_EMPTY]\nThe length of the user input is zero")]
+    PassphraseEmpty,
+        /// Error when passphrase length is larger that 1KB (`input.len() / 1024`) in size to prevent DOS attack
+    #[fail(display = "[PASSPHRASE_TOO_LARGE]\nThe length of the user input is unresonably large which can cause a DOS attack")]
+    PassphraseTooLarge,
 }
 
 impl std::convert::From<branca::errors::Error> for SGError {
