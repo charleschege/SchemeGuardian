@@ -1,5 +1,5 @@
 use schemeguardian::secrets::{AuthEngine, Role, Target};
-use schemeguardian::secrets::branca_encode;
+use schemeguardian::secrets::Passphrase;
 use schemeguardian::SGError;
 use secrecy::{Secret, ExposeSecret};
 
@@ -21,9 +21,9 @@ fn main() -> Result<(), SGError>{
     println!("[{:?}]\n{:?}----{:?}", op.0, &op.1.expose_secret(), op.2);
     println!("[BRANCA ENCODED]\n{:?}", branca_encode(op.1)?.expose_secret());*/
 
-    let op = AuthEngine::new()
+    //let op = AuthEngine::new()
     //.authenticate(Secret::new("x43:::hgu9ys5if3gcy30uk9mwmbckzq6tk9pauh8she6ov75ju5q0pdkuozzatomwyrsx".to_owned()))?;
-    .rm(Secret::new("x43:::hgu9ys5if3gcy30uk9mwmbckzq6tk9pauh8she6ov75ju5q0pdkuozzatomwyrsx".to_owned()))?;
+    //.rm(Secret::new("x43:::hgu9ys5if3gcy30uk9mwmbckzq6tk9pauh8she6ov75ju5q0pdkuozzatomwyrsx".to_owned()))?;
     //.list_keys()?;
 /*
     if let Some(inner) = op.1 {
@@ -32,7 +32,12 @@ fn main() -> Result<(), SGError>{
         println!("[ACCESS]:<{:?}> ", op.0)
     }
     */
-    dbg!(op);
+
+    dbg!(Passphrase::new()
+        .secret(Secret::new("12345".to_owned()))
+        //.issue()?.expose_secret()
+        .authenticate(Secret::new("$argon2i$v=19$m=65536,t=3,p=4$QAAAAAAAAAB4MGpweWtkbjF5OG9oaG9ybzFmY3Z4ZnJ6ODZjbXoyYzc5dWV2a3Nrem9va2llcHg4dWRuZjlhMGZ0NzN2ODBo$RGk3KzGdytA0bkgdXEhdWnpnGWUNWOIZl85KBbHaVpk".to_owned()))?
+    );
     
     Ok(())
 }

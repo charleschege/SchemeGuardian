@@ -9,7 +9,7 @@ use std::fs;
 #[derive(Debug, Deserialize)]
 pub struct SgTomlSecrets {
         ///Default secret key used on all positions
-    default: String,
+    pub default: String,
         /// Expose the branca field to public API to make it easier to use
     pub branca: String,
 }

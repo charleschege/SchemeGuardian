@@ -23,7 +23,7 @@ pub mod errors;
 #[macro_export]
 lazy_static! {
         /// Create a static for branca token generation secret key for branca tokens
-   pub static ref SG_BRANCA_KEY: Secret<sg_statics::SgTomlSecrets> = {
+   pub static ref SG_SECRET_KEYS: Secret<sg_statics::SgTomlSecrets> = {
        sg_statics::SGConfig::new().secrets()
    };
 }
