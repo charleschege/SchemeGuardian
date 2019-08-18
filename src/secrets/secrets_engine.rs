@@ -45,9 +45,13 @@ impl Default for Role {
     fn default() -> Self{ Role::User }
 }
 
-    /// `Target` is the resource being requested
+    /// `Target` is the resource being requested or route being accessed
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Target {
+        /// `Guardian` Target for accounts that have a cloud manager and a user
+    Guardian,
+        /// `Global` Target has access to administration and user routes or permissions
+    Global,
         /// A custom role for the user
     CustomTarget(String),
 }
