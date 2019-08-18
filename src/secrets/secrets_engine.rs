@@ -136,6 +136,28 @@ impl AuthEngine where {
             Ok((custom_codes::DbOps::Inserted, Secret::new(bearer_key), None))
         }        
     }
+        /// Create a new branca encoded token
+    pub fn issue(self) -> Result<(custom_codes::DbOps, Secret<String>, Option<AuthPayload>), SGError> {
+        let auth_db = sg_auth();
+        let db = Db::start_default(auth_db)?;
+
+        let key = bincode::serialize(&self.bearer.0)?; 
+        dbg!(&self.payload.random_key);
+
+        let value = bincode::serialize::<AuthPayload>(&self.payload)?; //TODO: Should I encrypt bearer with branca in index
+
+        let dbop = db.insert(key, value)?;
+
+        let raw_key = self.bearer.0.clone() + ":::" + &self.payload.random_key;
+        let bearer_key = crate::secrets::branca_encode(Secret::new(raw_key))?;
+
+        if let Some(updated) = dbop {
+            let data = bincode::deserialize::<AuthPayload>(&updated)?;
+            Ok((custom_codes::DbOps::Modified, bearer_key, Some(data)))
+        }else {
+            Ok((custom_codes::DbOps::Inserted, bearer_key, None))
+        }        
+    }
         
         /// Authenticate an existing token
     pub fn get(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps, Option<Payload>), SGError> {
