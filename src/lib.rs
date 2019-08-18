@@ -8,7 +8,7 @@
 use lazy_static::*;
 use secrecy::Secret;
 
-pub use secrets::secrets_engine;
+pub use secrets::{secrets_engine, passphrase_engine, csprng, branca_engine};
     /// secrets module
 pub mod secrets;
 
