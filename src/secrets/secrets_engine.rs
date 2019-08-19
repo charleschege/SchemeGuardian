@@ -29,7 +29,7 @@ impl Default for SGSecret {
 }
 
     /// `Role` of the user
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Role {
         /// The user with all access rights
     SuperUser,
@@ -121,7 +121,6 @@ impl AuthEngine where {
         let db = Db::start_default(auth_db)?;
 
         let key = bincode::serialize(&self.bearer.0)?; 
-        dbg!(&self.payload.random_key);
 
         let value = bincode::serialize::<AuthPayload>(&self.payload)?; //TODO: Should I encrypt bearer with branca in index
 
@@ -142,7 +141,6 @@ impl AuthEngine where {
         let db = Db::start_default(auth_db)?;
 
         let key = bincode::serialize(&self.bearer.0)?; 
-        dbg!(&self.payload.random_key);
 
         let value = bincode::serialize::<AuthPayload>(&self.payload)?; //TODO: Should I encrypt bearer with branca in index
 
@@ -225,7 +223,6 @@ impl AuthEngine where {
 
         let raw_key = raw_key.expose_secret();
         let dual = raw_key.split(":::").collect::<Vec<&str>>();
-        dbg!(&dual[0]);
         let key = bincode::serialize(dual[0])?;
 
         let check_key = db.remove(key)?;
@@ -253,11 +250,6 @@ impl AuthEngine where {
             }
         });
 
-
-        dbg!(sled_vec.into_iter().map(|data| {
-            bincode::deserialize::<String>(&data)
-        }).collect::<Vec<_>>());
-
         Ok(vec![])
     }
     
@@ -275,11 +267,6 @@ impl AuthEngine where {
                 sled_vec.clear();
             }
         });
-
-
-        dbg!(sled_vec.into_iter().map(|data| {
-            bincode::deserialize::<AuthPayload>(&data)
-        }).collect::<Vec<_>>());
 
         Ok(vec![])
     }
