@@ -33,8 +33,10 @@ impl Default for SGSecret {
 pub enum Role {
         /// The user with all access rights
     SuperUser,
-        /// A user with some administrative rights
+        /// A user with administrative rights
     Admin,
+        /// A user with some administrative rights
+    SubAdmin,
         /// A normal user
     User,
         /// A custom role for the user
