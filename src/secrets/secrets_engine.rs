@@ -29,8 +29,8 @@ impl Default for SGSecret {
 }
 
     /// `Role` of the user
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum Role {
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub enum Role<R> {
         /// The user with all access rights
     SuperUser,
         /// A user with administrative rights
@@ -40,10 +40,10 @@ pub enum Role {
         /// A normal user
     User,
         /// A custom role for the user
-    CustomRole(String),
+    CustomRole(R),
 }
 
-impl Default for Role {
+impl<R> Default for Role<R> {
     fn default() -> Self{ Role::User }
 }
 
@@ -64,8 +64,8 @@ impl Default for Target {
 
     /// `AuthPayload` creates and authenticates auth values
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AuthPayload {
-    role: Role,
+pub struct AuthPayload<R> {
+    role: Role<R>,
     target: Target,
     lease: Lease,
     random_key: String,
@@ -73,12 +73,12 @@ pub struct AuthPayload {
 
     /// `AuthEngine` creates and authenticates authorization/authentication secrets
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AuthEngine {
+pub struct AuthEngine<R> {
     bearer: SGSecret,
-    payload: AuthPayload,
+    payload: AuthPayload<R>,
 }
 
-impl AuthEngine where {
+impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::cmp::Eq + serde::Serialize + serde::de::DeserializeOwned {
         /// Initialize a AuthEngine for creating and authenticating branca secrets
     pub fn new() -> Self {
         Self { 
@@ -98,7 +98,7 @@ impl AuthEngine where {
         self
     }
         /// The role of the client  
-    pub fn role(mut self, role: Role) -> Self {
+    pub fn role(mut self, role: Role<R>) -> Self {
         self.payload.role = role;
         
         self
@@ -118,33 +118,33 @@ impl AuthEngine where {
     }
 
         /// Insert new token
-    pub fn insert(self) -> Result<(custom_codes::DbOps, Secret<String>, Option<AuthPayload>), SGError> {
+    pub fn insert(self) -> Result<(custom_codes::DbOps, Secret<String>, Option<AuthPayload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::start_default(auth_db)?;
 
         let key = bincode::serialize(&self.bearer.0)?; 
 
-        let value = bincode::serialize::<AuthPayload>(&self.payload)?; //TODO: Should I encrypt bearer with branca in index
+        let value = bincode::serialize::<AuthPayload<R>>(&self.payload)?; //TODO: Should I encrypt bearer with branca in index
 
         let dbop = db.insert(key, value)?;
 
         let bearer_key = self.bearer.0.clone() + ":::" + &self.payload.random_key;
 
         if let Some(updated) = dbop {
-            let data = bincode::deserialize::<AuthPayload>(&updated)?;
+            let data = bincode::deserialize::<AuthPayload<R>>(&updated)?;
             Ok((custom_codes::DbOps::Modified, Secret::new(bearer_key), Some(data)))
         }else {
             Ok((custom_codes::DbOps::Inserted, Secret::new(bearer_key), None))
         }        
     }
         /// Create a new branca encoded token
-    pub fn issue(self) -> Result<(custom_codes::DbOps, Secret<String>, Option<AuthPayload>), SGError> {
+    pub fn issue(self) -> Result<(custom_codes::DbOps, Secret<String>, Option<AuthPayload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::start_default(auth_db)?;
 
         let key = bincode::serialize(&self.bearer.0)?; 
 
-        let value = bincode::serialize::<AuthPayload>(&self.payload)?; //TODO: Should I encrypt bearer with branca in index
+        let value = bincode::serialize::<AuthPayload<R>>(&self.payload)?; //TODO: Should I encrypt bearer with branca in index
 
         let dbop = db.insert(key, value)?;
 
@@ -152,7 +152,7 @@ impl AuthEngine where {
         let bearer_key = crate::secrets::branca_encode(Secret::new(raw_key))?;
 
         if let Some(updated) = dbop {
-            let data = bincode::deserialize::<AuthPayload>(&updated)?;
+            let data = bincode::deserialize::<AuthPayload<R>>(&updated)?;
             Ok((custom_codes::DbOps::Modified, bearer_key, Some(data)))
         }else {
             Ok((custom_codes::DbOps::Inserted, bearer_key, None))
@@ -160,7 +160,7 @@ impl AuthEngine where {
     }
         
         /// Authenticate an existing token
-    pub fn get(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps, Option<Payload>), SGError> {
+    pub fn get(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps, Option<Payload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::start_default(auth_db)?;
 
@@ -171,7 +171,7 @@ impl AuthEngine where {
         let check_key = db.get(key)?;
 
         if let Some(binary) = check_key {
-            let data = bincode::deserialize::<AuthPayload>(&binary)?;
+            let data = bincode::deserialize::<AuthPayload<R>>(&binary)?;
             Ok((custom_codes::DbOps::KeyFound, Some((data.role, data.target))))
         }else {
             Ok((custom_codes::DbOps::KeyNotFound, None))
@@ -184,7 +184,7 @@ impl AuthEngine where {
         ///     `custom_codes::AccessStatus::Granted` for a secret that is live and RAC is authenticated
         ///     `custom_codes::AccessStatus::RejectedRAC` for a secret that is live but the RAC is not authentic
         ///     `custom_codes::AccessStatus::Rejected` for a secret that cannot be authenticated
-    pub fn authenticate(self, raw_key: Secret<String>) -> Result<(custom_codes::AccessStatus, Option<Payload>), SGError> {
+    pub fn authenticate(self, raw_key: Secret<String>) -> Result<(custom_codes::AccessStatus, Option<Payload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::start_default(auth_db)?;
 
@@ -197,7 +197,7 @@ impl AuthEngine where {
         let check_key = db.get(key)?;
 
         if let Some(binary) = check_key {
-            let payload = bincode::deserialize::<AuthPayload>(&binary)?;
+            let payload = bincode::deserialize::<AuthPayload<R>>(&binary)?;
             match payload.lease {
                 Lease::DateExpiry(datetime) => {
                     if Utc::now() > datetime {
@@ -219,7 +219,7 @@ impl AuthEngine where {
     }
 
         /// Remove a secret from the database
-    pub fn rm(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps, Option<FullPayload>), SGError> {
+    pub fn rm<'d>(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps, Option<FullPayload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::start_default(auth_db)?;
 
@@ -230,7 +230,7 @@ impl AuthEngine where {
         let check_key = db.remove(key)?;
 
         if let Some(binary) = check_key {
-            let data = bincode::deserialize::<AuthPayload>(&binary)?;
+            let data = bincode::deserialize::<AuthPayload<R>>(&binary)?;
             Ok((custom_codes::DbOps::Deleted, Some((data.role, data.lease, data.target, data.random_key))))
         }else {
             Ok((custom_codes::DbOps::KeyNotFound, None))
@@ -275,10 +275,10 @@ impl AuthEngine where {
 }
 
     /// A return value to an of the operation. It `contains the payload of the AuthPayload` from `AuthEngine`
-pub type FullPayload = (Role, Lease, Target, String);
+pub type FullPayload<R> = (Role<R>, Lease, Target, String);
 
     /// A return value to an of the operation. It contains the payload of the AuthPayload values `Role` & `Target`
-pub type Payload = (Role, Target);
+pub type Payload<R> = (Role<R>, Target);
 
     /// A an expiry date to lease a secret
 #[derive(Debug, Serialize, Deserialize, PartialEq, PartialOrd, Clone, Eq)]
