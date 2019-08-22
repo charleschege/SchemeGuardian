@@ -1,11 +1,12 @@
-use secrecy::{Secret, ExposeSecret, DebugSecret};
+use secrecy::{Secret, ExposeSecret};
 use rand::distributions::Alphanumeric;
 use rand::{Rng, thread_rng};
-use crate::SG_SECRET_KEYS;
-use crate::SGError;
 use branca::Branca;
 use std::iter;
 use std::convert::TryInto;
+
+use crate::SG_SECRET_KEYS;
+use crate::SGError;
 
     /// Generate a random branca token of size u64 Alphanumeric
 pub fn branca_random() -> Result<Secret<String>, SGError>{
