@@ -118,7 +118,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
     }
 
         /// Insert new token
-    pub fn insert(self) -> Result<(custom_codes::DbOps, Secret<String>, Option<AuthPayload<R>>), SGError> {
+    pub fn insert(self) -> Result<(custom_codes::DbOps<R>, Secret<String>, Option<AuthPayload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::start_default(auth_db)?;
 
@@ -138,7 +138,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
         }        
     }
         /// Create a new branca encoded token
-    pub fn issue(self) -> Result<(custom_codes::DbOps, Secret<String>, Option<AuthPayload<R>>), SGError> {
+    pub fn issue(self) -> Result<(custom_codes::DbOps<R>, Secret<String>, Option<AuthPayload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::start_default(auth_db)?;
 
@@ -160,7 +160,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
     }
         
         /// Authenticate an existing token
-    pub fn get(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps, Option<Payload<R>>), SGError> {
+    pub fn get(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps<R>, Option<Payload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::start_default(auth_db)?;
 
@@ -219,7 +219,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
     }
 
         /// Remove a secret from the database
-    pub fn rm<'d>(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps, Option<FullPayload<R>>), SGError> {
+    pub fn rm<'d>(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps<R>, Option<FullPayload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::start_default(auth_db)?;
 
