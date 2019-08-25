@@ -41,6 +41,8 @@ pub enum Role<R> {
     User,
         /// A custom role for the user
     CustomRole(R),
+		/// Role is not specified hence the user has no rights
+	Unspecified,
 }
 
 impl<R> Default for Role<R> {
