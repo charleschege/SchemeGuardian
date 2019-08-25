@@ -122,7 +122,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
         /// Insert new token
     pub fn insert(self) -> Result<(custom_codes::DbOps<R>, Secret<String>, Option<AuthPayload<R>>), SGError> {
         let auth_db = sg_auth();
-        let db = Db::start_default(auth_db)?;
+        let db = Db::open(auth_db)?;
 
         let key = bincode::serialize(&self.bearer.0)?; 
 
@@ -142,7 +142,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
         /// Create a new branca encoded token
     pub fn issue(self) -> Result<(custom_codes::DbOps<R>, Secret<String>, Option<AuthPayload<R>>), SGError> {
         let auth_db = sg_auth();
-        let db = Db::start_default(auth_db)?;
+        let db = Db::open(auth_db)?;
 
         let key = bincode::serialize(&self.bearer.0)?; 
 
@@ -164,7 +164,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
         /// Authenticate an existing token
     pub fn get(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps<R>, Option<Payload<R>>), SGError> {
         let auth_db = sg_auth();
-        let db = Db::start_default(auth_db)?;
+        let db = Db::open(auth_db)?;
 
         let raw_key = raw_key.expose_secret();
         let dual = raw_key.split(":::").collect::<Vec<&str>>();
@@ -188,7 +188,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
         ///     `custom_codes::AccessStatus::Rejected` for a secret that cannot be authenticated
     pub fn authenticate(self, raw_key: Secret<String>) -> Result<(custom_codes::AccessStatus, Option<Payload<R>>), SGError> {
         let auth_db = sg_auth();
-        let db = Db::start_default(auth_db)?;
+        let db = Db::open(auth_db)?;
 
         let raw_key = raw_key.expose_secret();
         let dual = raw_key.split(":::").collect::<Vec<&str>>();
@@ -223,7 +223,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
         /// Remove a secret from the database
     pub fn rm<'d>(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps<R>, Option<FullPayload<R>>), SGError> {
         let auth_db = sg_auth();
-        let db = Db::start_default(auth_db)?;
+        let db = Db::open(auth_db)?;
 
         let raw_key = raw_key.expose_secret();
         let dual = raw_key.split(":::").collect::<Vec<&str>>();
@@ -242,7 +242,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
        /// Show all database entries
     pub fn list_keys(self) -> Result<Vec<u8>, SGError> {
         let auth_db = sg_auth();
-        let db = Db::start_default(auth_db)?;
+        let db = Db::open(auth_db)?;
         
         let mut sled_vec = vec![];
 
@@ -260,7 +260,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
        /// Show all database entries
     pub fn list_values(self) -> Result<Vec<u8>, SGError> {
         let auth_db = sg_auth();
-        let db = Db::start_default(auth_db)?;
+        let db = Db::open(auth_db)?;
         
         let mut sled_vec = vec![];
 
