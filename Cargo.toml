@@ -31,13 +31,14 @@ rusty_ulid = "0.9.0"
 rust-argon2 = "0.5.0"
 
 #ASYNC
-#runtime = "0.3.0-alpha.6"
+#async-std = "0.99.5"
 
 # I/O & FILES
 toml = "0.5.1"
 
 #FASTER I/O
 #deque = "0.3.2"
+#rayon
 
 # SCHEDULER
 #bucket_queue = "2.0.0"
@@ -51,35 +52,24 @@ zeroize = "0.9.2"
 #TIME/DATE
 chrono = { version = "0.4.7", features = ["serde"] }
 
-#COMPRESSIONS
-#lz4 = "1.23.1"
-
 #KV STORE
 sled = "0.27.0"
-
-### OPTIONAL
-
-#FILESYSTEM ACCESS AND ENCRYPTION
-#zbox = "0.8.3"
-
-# TLS
-#rustls = "0.15.2"
 
 # CRON SCHEDULER
 #clokwerk = "0.1.0"
 
+### OPTIONAL
+
+#FILESYSTEM ACCESS AND ENCRYPTION
+zbox = "0.8.6"
+uhttp_sse = "0.5.1"
+
 # GLOBAL ALLOCATOR
 #jemallocator = "0.3.0"
-
-# ENCRYPTION
-#libflate = "0.1.25"
 
 #EMAIL SERVICES
 #lettre = "0.9.2"
 #lettre_email = "0.9.2"
-
-# ACTORS
-#riker = "0.3.0"
 
 #CLI
 #color-backtrace = "0.1.3"
