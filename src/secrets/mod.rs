@@ -13,3 +13,5 @@ pub mod csprng;
 pub use passphrase_engine::Passphrase;
     /// Contains all methods for handling passphrases
 pub mod passphrase_engine;
+    /// Contains all methods for simple authentication based on stored values
+pub mod auth_storage;

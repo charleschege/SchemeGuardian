@@ -1,6 +1,5 @@
-use schemeguardian::secrets::Passphrase;
 use schemeguardian::SGError;
-use secrecy::{Secret};
+use schemeguardian::secrets::auth_storage::SimpleAuthStorage;
 
 
 
@@ -31,11 +30,7 @@ fn main() -> Result<(), SGError>{
     }
     */
 
-    dbg!(Passphrase::new()
-        .secret(Secret::new("12345".to_owned()))
-        //.issue()?.expose_secret()
-        .authenticate(Secret::new("$argon2i$v=19$m=65536,t=3,p=4$QAAAAAAAAAB4MGpweWtkbjF5OG9oaG9ybzFmY3Z4ZnJ6ODZjbXoyYzc5dWV2a3Nrem9va2llcHg4dWRuZjlhMGZ0NzN2ODBo$RGk3KzGdytA0bkgdXEhdWnpnGWUNWOIZl85KBbHaVpk".to_owned()))?
-    );
+    println!("{}", SimpleAuthStorage::<String>::new().key());
     
     Ok(())
 }

@@ -1,5 +1,6 @@
 #![deny(unsafe_code)]
 #![deny(missing_docs)]
+#![deny(missing_doc_code_examples)]
 
 //! # SchemeGuardian
 //! Secrets Authrorization, Authentication, Verification and Encryption Manager with Key-Value Storage
@@ -8,6 +9,9 @@
 use lazy_static::*;
 use secrecy::Secret;
 
+pub use global::SGSecret;
+    /// Contains global types and methods
+pub mod global;
 pub use secrets::{secrets_engine, passphrase_engine, csprng, branca_engine};
     /// secrets module
 pub mod secrets;

@@ -1,31 +1,15 @@
 use serde_derive::{Serialize, Deserialize};
 use chrono::prelude::*;
 use sled::Db;
-use secrecy::{Secret, ExposeSecret, CloneableSecret, DebugSecret};
+use secrecy::{Secret, ExposeSecret};
 use zeroize::Zeroize;
 
 use crate::SGError;
 use crate::secrets;
+use crate::SGSecret;
 
 fn sg_auth() -> &'static str {
     "./SchemeGuardianDB/SG_AUTH"
-}
-
-#[derive(Debug, Clone, Zeroize, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[zeroize(drop)]
-struct SGSecret(String);
-
-impl CloneableSecret for SGSecret {}
-
-impl DebugSecret for SGSecret {
-    fn debug_secret() -> &'static str {
-        "S3CR3T::REDACTED"
-    }
-}
-
-impl Default for SGSecret {
-    fn default() -> Self{ Self(String::default()) }
 }
 
     /// `Role` of the user
@@ -63,7 +47,6 @@ pub enum Target {
 impl Default for Target {
     fn default() -> Self{ Target::CustomTarget(Default::default()) }
 }
-
     /// `AuthPayload` creates and authenticates auth values
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuthPayload<R> {
