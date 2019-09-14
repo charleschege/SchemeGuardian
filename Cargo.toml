@@ -31,7 +31,7 @@ rusty_ulid = "0.9.0"
 rust-argon2 = "0.5.0"
 
 #ASYNC
-#async-std = "0.99.5"
+async-std = "0.99.5"
 
 # I/O & FILES
 toml = "0.5.1"
