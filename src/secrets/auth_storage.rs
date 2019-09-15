@@ -21,7 +21,7 @@ use crate::{SGSecret, Lease, SGError};
     /// SimpleAuthStorage::new()
     ///     .user("Foo")
     ///     .target("Bar")
-    ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::Days(7)))
+    ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::days(7)))
     ///     .build();
         /// ```
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -80,7 +80,7 @@ impl SimpleAuthStorage {
         /// use schemeguardian::Lease;
         /// use chrono::Utc;
         /// SimpleAuthStorage::new()
-        ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::Days(7)));
+        ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::days(7)));
         /// ```
     pub fn lease(mut self, lease: Lease) -> Self {
         self.lease = lease;
@@ -107,7 +107,7 @@ impl SimpleAuthStorage {
         /// SimpleAuthStorage::new()
         ///     .user("Foo")
         ///     .target("Bar")
-        ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::Days(7)))
+        ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::days(7)))
         ///     .build()
         ///     .insert();
         /// ```
@@ -132,11 +132,12 @@ impl SimpleAuthStorage {
 }
     /// Get default path to database file
     /// ### Structure
+    /// ```no_run
+    /// # fn main() {}
     /// fn sg_simple_auth() -> &'static str {
-    ///
     ///     "./SchemeGuardianDB/SG_SIMPLE_AUTH"
-    ///
     /// }
+    /// ```
 fn sg_simple_auth() -> &'static str {
     "./SchemeGuardianDB/SG_SIMPLE_AUTH"
 }
@@ -146,9 +147,9 @@ fn sg_simple_auth() -> &'static str {
     /// ```no_run
     /// use schemeguardian::secrets::auth_storage::Payload;
     /// enum MyUserEnum {Foo, Bar}
-    /// fn fetch_from_db() -> Payload<MyUserEnum> {
+    /// fn fetch_from_db() -> Payload {
     ///     // some code here
-    ///     (MyUserEnum::Bar, Default::default(), Default::default(), Default::default())
+    ///     (Default::default(), Default::default(), Default::default(), Default::default())
     /// }
     /// ```
 pub type Payload = (String, String, Lease, String);
