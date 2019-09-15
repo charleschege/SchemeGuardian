@@ -1,35 +1,45 @@
 use serde_derive::{Serialize, Deserialize};
-use secrecy::ExposeSecret;
-use crate::SGSecret;
-use crate::Lease;
+use secrecy::{ExposeSecret, Secret};
+use crate::{SGSecret, Lease, SGError};
 
     /// ## Struct for simple storage
     /// ### Struct structure
     /// ```no_run
     /// use schemeguardian::global::Lease;
-    /// struct SimpleAuthStorage<AS> {
-    ///     user: Option<AS>, // `AS` implements `std::fmt::Debug + std::clone::Clone`
-    ///     target: Option<AS>,
+    /// struct SimpleAuthStorage<SAS> {
+    ///     user: Option<SAS>, // `SAS` implements `std::fmt::Debug + std::clone::Clone`
+    ///     target: Option<SAS>,
     ///     lease: Lease,
     ///     random_key: String,
     /// }
     /// ```
+    /// #### Example
+    /// ```
+    /// use schemeguardian::secrets::SimpleAuthStorage;
+    /// use schemeguardian::{SGSecret, Lease};
+    /// use chrono::Utc;
+    /// SimpleAuthStorage::new()
+    ///     .user("Foo")
+    ///     .target("Bar")
+    ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::Days(7)))
+    ///     .build();
+        /// ```
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub struct SimpleAuthStorage<AS> {
-    user: Option<AS>,
-    target: Option<AS>,
+pub struct SimpleAuthStorage {
+    user: String,
+    target: String,
     lease: Lease,
     random_key: SGSecret,
 }
 
-impl<AS> SimpleAuthStorage<AS> where AS: std::fmt::Debug + std::clone::Clone{
+impl SimpleAuthStorage {
         /// ### Initialize a new SimpleAuthStorage
         /// #### Example
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
         /// use schemeguardian::{SGSecret, Lease};
         /// use chrono::Utc;
-        /// let foo = SimpleAuthStorage::<String>::new();
+        /// let foo = SimpleAuthStorage::new();
         /// ```
     pub fn new() -> Self {
         Self {
@@ -39,35 +49,93 @@ impl<AS> SimpleAuthStorage<AS> where AS: std::fmt::Debug + std::clone::Clone{
             random_key: Default::default(),
         }
     }
-        /// Add User
-    pub fn user(mut self, user: AS) -> Self {
-        self.user = Some(user);
+        /// ### Add a User
+        /// #### Example
+        /// ```
+        /// use schemeguardian::secrets::SimpleAuthStorage;
+        /// SimpleAuthStorage::new()
+        ///     .user("Foo");
+        /// ```
+    pub fn user(mut self, user: &str) -> Self {
+        self.user = user.to_owned();
 
         self
     }
-        /// Add a target
-    pub fn target(mut self, target: AS) -> Self {
-        self.target = Some(target);
+        /// ### Add a Target
+        /// #### Example
+        /// ```
+        /// use schemeguardian::secrets::SimpleAuthStorage;
+        /// SimpleAuthStorage::new()
+        ///     .target("Bar");
+        /// ```
+    pub fn target(mut self, target: &str) -> Self {
+        self.target = target.to_owned();
 
         self
     }
-        /// Add a lease
+        /// ### Add a Lease
+        /// #### Example
+        /// ```
+        /// use schemeguardian::secrets::SimpleAuthStorage;
+        /// use schemeguardian::Lease;
+        /// use chrono::Utc;
+        /// SimpleAuthStorage::new()
+        ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::Days(7)));
+        /// ```
     pub fn lease(mut self, lease: Lease) -> Self {
         self.lease = lease;
 
         self
     }
-        /// Add a random_key
+        /// ### Build the struct
+        /// #### Example
+        /// ```
+        /// use schemeguardian::secrets::SimpleAuthStorage;
+        /// SimpleAuthStorage::new()
+        ///     .build();
+        /// ```
     pub fn build(mut self) -> Self {
         self.random_key = SGSecret(crate::secrets::random64alpha().expose_secret().to_owned());
 
         self
     }
+        /// #### Example
+        /// ```
+        /// use schemeguardian::secrets::SimpleAuthStorage;
+        /// use schemeguardian::{SGSecret, Lease};
+        /// use chrono::Utc;
+        /// SimpleAuthStorage::new()
+        ///     .user("Foo")
+        ///     .target("Bar")
+        ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::Days(7)))
+        ///     .build()
+        ///     .insert();
+        /// ```
+    pub fn insert(self) -> Result<(custom_codes::DbOps, Secret<String>), SGError> {
+        let auth_db = sg_simple_auth();
+        let db = sled::Db::open(auth_db)?;
+
+        let key = bincode::serialize(&self.user)?; 
+
+        let value = bincode::serialize::<SimpleAuthStorage>(&self)?; //TODO: Should I encrypt bearer with branca in index
+
+        let dbop = db.insert(key, value)?;
+
+        let bearer_key = Secret::new(self.user.clone() + ":::" + &self.random_key + ":::" + &self.target);
+
+        if let Some(updated) = dbop {
+            Ok((custom_codes::DbOps::Modified, bearer_key))
+        }else {
+            Ok((custom_codes::DbOps::Inserted, bearer_key))
+        }        
+    }
 }
     /// Get default path to database file
     /// ### Structure
     /// fn sg_simple_auth() -> &'static str {
+    ///
     ///     "./SchemeGuardianDB/SG_SIMPLE_AUTH"
+    ///
     /// }
 fn sg_simple_auth() -> &'static str {
     "./SchemeGuardianDB/SG_SIMPLE_AUTH"
@@ -83,5 +151,4 @@ fn sg_simple_auth() -> &'static str {
     ///     (MyUserEnum::Bar, Default::default(), Default::default(), Default::default())
     /// }
     /// ```
-pub type Payload<R> = (R, String, Lease, String);
-
+pub type Payload = (String, String, Lease, String);
