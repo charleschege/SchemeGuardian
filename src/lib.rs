@@ -12,7 +12,7 @@ use secrecy::Secret;
 pub use global::SGSecret;
     /// Contains global types and methods
 pub mod global;
-pub use secrets::{secrets_engine, passphrase_engine, csprng, branca_engine};
+pub use secrets::{secrets_engine, passphrase_engine, csprng, branca_engine, Lease};
     /// secrets module
 pub mod secrets;
 

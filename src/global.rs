@@ -1,17 +1,44 @@
 use serde_derive::{Serialize, Deserialize};
 use secrecy::{DebugSecret, CloneableSecret};
 use zeroize::Zeroize;
+use chrono::{DateTime, Utc};
 
+    /// ### A an expiry date to lease a secret
+    /// #### Example
+    /// ```
+    /// use schemeguardian::global::Lease;
+    /// let foo = Lease::Lifetime;
+    /// assert_eq!(foo, Lease::Lifetime);
+    /// ```
+#[derive(Debug, Serialize, Deserialize, PartialEq, PartialOrd, Clone, Eq)]
+pub enum Lease {
+        /// Has an expiry date of DateTime<Utc>
+    DateExpiry(DateTime<Utc>),
+        /// This is a lease to a secret that will never expire
+    Lifetime,
+        /// This is a lease to a secret that will expire after the download is completed
+    OnDownload,
+        /// This is a lease to a secret that will expire after the upload is completed
+    OnUpload,
+        /// This is a lease to a secret that will expire after the network is disconnected
+    OnDisconnection,
+        /// The lease time has not been specified by the user
+    UnSpecified,
+}
+
+impl Default for Lease {
+    fn default() -> Self{ Lease::DateExpiry(Utc::now() + chrono::Duration::hours(24)) }
+}
     /// `SGSecret` is a struct with public fields that impl Zeroize and `#[zeroize(drop)]` for security.
     ///
     /// `Deref`, `ClonableSecret`, `DebugSecret`, `fmt::Debug`, `fmt::Display` and `Default` traits have been implemented for this
     /// ## Example
     /// ```
-    /// use crate::SGSecret;
+    /// use schemeguardian::SGSecret;
     /// let data = SGSecret(String::from("WHO AM I"));
     /// dbg!(data);
     /// ```
-#[derive(Clone, Zeroize, Serialize, Deserialize)]
+#[derive(Clone, Zeroize, Serialize, Deserialize, PartialEq, PartialOrd, Eq)]
 #[serde(deny_unknown_fields)]
 #[zeroize(drop)]
 pub struct SGSecret(pub String);

@@ -29,8 +29,6 @@ fn main() -> Result<(), SGError>{
         println!("[ACCESS]:<{:?}> ", op.0)
     }
     */
-
-    println!("{}", SimpleAuthStorage::<String>::new().key());
     
     Ok(())
 }

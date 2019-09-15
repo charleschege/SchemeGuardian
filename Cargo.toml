@@ -54,14 +54,6 @@ chrono = { version = "0.4.7", features = ["serde"] }
 
 #KV STORE
 sled = "0.27.0"
-
-# CRON SCHEDULER
-#clokwerk = "0.1.0"
-
-### OPTIONAL
-
-#FILESYSTEM ACCESS AND ENCRYPTION
-zbox = "0.8.6"
 uhttp_sse = "0.5.1"
 
 # GLOBAL ALLOCATOR
