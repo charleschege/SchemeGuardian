@@ -1,34 +1,34 @@
-use schemeguardian::SGError;
-use schemeguardian::secrets::auth_storage::SimpleAuthStorage;
-
-
-
-
-    // Secondary index in a sled database
+use secrecy::ExposeSecret;
+use schemeguardian::{SGSecret, Lease, SGError};
+use schemeguardian::secrets::SimpleAuthStorage;
 
 fn main() -> Result<(), SGError>{    
-    /*
-    let op = AuthEngine::new()
-        .bearer(Secret::new("x43".to_owned()))
-        .role(Role::CustomRole("Student".to_owned()))
-        .expiry(chrono::Duration::weeks(1))
-        .target(Target::CustomTarget("ICT".to_owned()))
-        .insert()?;
-    
-    println!("[{:?}]\n{:?}----{:?}", op.0, &op.1.expose_secret(), op.2);
-    println!("[BRANCA ENCODED]\n{:?}", branca_encode(op.1)?.expose_secret());*/
+    /*println!("{:?}", SimpleAuthStorage::new()
+        .user(SGSecret("x43".to_owned()))
+        .target(SGSecret("ICT".to_owned()))
+        .lease(Lease::DateExpiry(chrono::Utc::now() + chrono::Duration::days(7)))
+        .build()
+        .insert()?);*/
 
-    //let op = AuthEngine::new()
-    //.authenticate(Secret::new("x43:::hgu9ys5if3gcy30uk9mwmbckzq6tk9pauh8she6ov75ju5q0pdkuozzatomwyrsx".to_owned()))?;
-    //.rm(Secret::new("x43:::hgu9ys5if3gcy30uk9mwmbckzq6tk9pauh8she6ov75ju5q0pdkuozzatomwyrsx".to_owned()))?;
-    //.list_keys()?;
-/*
-    if let Some(inner) = op.1 {
-        println!("[ACCESS]:<{:?}>\n  - Role: {:?}\n  - Target: {:?}", op.0, inner.0, inner.1);
-    }else {
-        println!("[ACCESS]:<{:?}> ", op.0)
-    }
-    */
+    /*if let Some(data) = SimpleAuthStorage::new()
+        .get(SGSecret("x43".to_owned()))?.1{
+            let d2  = data.3;
+            println!("{:?}", d2.0);
+        };*/
+
+    println!("{:?}", {
+        let data = SimpleAuthStorage::new()
+            .user(SGSecret("x43".to_owned()))
+            .target(SGSecret("ICT".to_owned()))
+            .lease(Lease::DateExpiry(chrono::Utc::now() + chrono::Duration::days(7)))
+            .build()
+            .insert()?.1;
+        let f = data.expose_secret().clone(); f
+    });
+
+    // x43:::xqktmxali4ajqfgw6zbv4zwem7amlnxqchgdzj8jyfelmsvizmssmveqrktal5fq:::ICT
+    println!("{:?}", SimpleAuthStorage::new()
+        .authenticate(SGSecret("x43:::xqktmxali4ajqfgw6zbv4zwem7amlnxqchgdzj8jyfelmsvizmssmveqrktal5fq:::ICT".to_owned()))?);
     
     Ok(())
 }
