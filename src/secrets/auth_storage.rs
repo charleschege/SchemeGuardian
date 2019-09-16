@@ -6,7 +6,8 @@ use crate::{SGSecret, Lease, SGError};
     /// ### Struct structure
     /// ```
     /// use schemeguardian::global::Lease;
-    /// struct SimpleAuthStorage<SAS> {
+    /// use schemeguardian::SGSecret;
+    /// struct SimpleAuthStorage {
     ///     user: SGSecret,
     ///     target: SGSecret,
     ///     lease: Lease,
@@ -19,11 +20,11 @@ use crate::{SGSecret, Lease, SGError};
     /// use schemeguardian::{SGSecret, Lease};
     /// use chrono::Utc;
     /// SimpleAuthStorage::new()
-    ///     .user("Foo")
-    ///     .target("Bar")
+    ///     .user(SGSecret("Foo".to_owned()))
+    ///     .target(SGSecret("Bar".to_owned()))
     ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::days(7)))
     ///     .build();
-        /// ```
+    /// ```
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct SimpleAuthStorage {
     user: SGSecret,
@@ -53,6 +54,7 @@ impl SimpleAuthStorage {
         /// #### Example
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
+        /// use schemeguardian::SGSecret;
         /// SimpleAuthStorage::new()
         ///     .user(SGSecret("Foo".to_owned()));
         /// ```
@@ -65,8 +67,9 @@ impl SimpleAuthStorage {
         /// #### Example
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
+        /// use schemeguardian::SGSecret;
         /// SimpleAuthStorage::new()
-        ///     .target(SGSecret("Bar").to_owned());
+        ///     .target(SGSecret("Bar".to_owned()));
         /// ```
     pub fn target(mut self, target: SGSecret) -> Self {
         self.target = target;
@@ -102,7 +105,7 @@ impl SimpleAuthStorage {
         /// ## Insert a new key to the Sled KV Store
         /// The outcome String is formatted as `user::random_key::target`
         /// #### Example
-        /// ```
+        /// ```no_run
         /// use schemeguardian::secrets::SimpleAuthStorage;
         /// use schemeguardian::{SGSecret, Lease};
         /// use chrono::Utc;
@@ -133,7 +136,7 @@ impl SimpleAuthStorage {
     }
         /// ## Get a value from a key
         /// #### Example
-        /// ```
+        /// ```no_run
         /// use schemeguardian::secrets::SimpleAuthStorage;
         /// use schemeguardian::SGSecret;
         /// SimpleAuthStorage::new()
@@ -161,9 +164,9 @@ impl SimpleAuthStorage {
         /// #### Example
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
-        /// use secrecy::Secret;
+        /// use schemeguardian::SGSecret;
         /// SimpleAuthStorage::new()
-        ///     .remove(Secret::new("foo".to_owned()));
+        ///     .remove(SGSecret("foo".to_owned()));
         /// ```
     pub fn remove(self, redactable_key: SGSecret) -> Result<(custom_codes::DbOps, Option<Payload>), SGError> {
         let auth_db = sg_simple_auth();
@@ -186,9 +189,9 @@ impl SimpleAuthStorage {
         /// #### Example
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
-        /// use secrecy::Secret;
+        /// use schemeguardian::SGSecret;
         /// SimpleAuthStorage::new()
-        ///     .remove(Secret::new("foo".to_owned()));
+        ///     .remove(SGSecret("foo".to_owned()));
         /// ```
     pub fn list(self) -> Result<Vec<Payload>, SGError> {
         let auth_db = sg_simple_auth();
@@ -217,11 +220,11 @@ impl SimpleAuthStorage {
         ///     `custom_codes::AccessStatus::RejectedRAC` for a secret that is live but the RAC is not authentic
         ///     `custom_codes::AccessStatus::Rejected` for a secret that cannot be authenticated
         /// #### Example
-        /// ```
+        /// ```should_panic
         /// use schemeguardian::secrets::SimpleAuthStorage;
-        /// use secrecy::Secret;
+        /// use schemeguardian::SGSecret;
         /// SimpleAuthStorage::new()
-        ///     .authenticate(Secret::new("foo".to_owned()));
+        ///     .authenticate(SGSecret("foo".to_owned()));
         /// ```
     pub fn authenticate(self, redactable_key: SGSecret) -> Result<(custom_codes::AccessStatus, Option<Payload>), SGError> {
         let auth_db = sg_simple_auth();
