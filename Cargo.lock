@@ -789,7 +789,7 @@ dependencies = [
 
 [[package]]
 name = "schemeguardian"
-version = "0.1.0-alpha.2"
+version = "0.1.0-alpha.3"
 dependencies = [
  "async-std 0.99.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "bincode 1.1.4 (registry+https://github.com/rust-lang/crates.io-index)",

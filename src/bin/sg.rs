@@ -1,5 +1,5 @@
-use secrecy::ExposeSecret;
-use schemeguardian::{SGSecret, Lease, SGError};
+use serde_derive::{Serialize, Deserialize};
+use schemeguardian::{SGSecret, SGError};
 use schemeguardian::secrets::SimpleAuthStorage;
 
 fn main() -> Result<(), SGError>{    
@@ -17,7 +17,7 @@ fn main() -> Result<(), SGError>{
         };*/
 
     /*println!("{:?}", {
-        let data = SimpleAuthStorage::new()
+        let data = SimpleAuthStorage::<CustomUser>::new()
             .user(SGSecret("x43".to_owned()))
             .target(SGSecret("ICT".to_owned()))
             .lease(Lease::DateExpiry(chrono::Utc::now() + chrono::Duration::days(7)))
@@ -26,9 +26,13 @@ fn main() -> Result<(), SGError>{
         let f = data.expose_secret().clone(); f
     });*/
 
-    // x43:::xqktmxali4ajqfgw6zbv4zwem7amlnxqchgdzj8jyfelmsvizmssmveqrktal5fq:::ICT
-    println!("{:?}", SimpleAuthStorage::new()
-        .authenticate(SGSecret("x43:::yqvnfgcum4o8meun2lcbjc7ymiubwkqhpmtcu6mpi4pcnzbdmdjpp0ddbjf3js1e:::ICT".to_owned()))?);
+    #[derive(Debug, Serialize, Deserialize)]
+    enum CustomUser {
+        Lecturer,
+        Accounts,
+    }
+    println!("{:?}", SimpleAuthStorage::<CustomUser>::new()
+        .authenticate(SGSecret("x43:::cgz569mu0mz0etyoffdyckta7mexlgssrct3m0054wgcleiiekuo2xgyvsjhvy6y:::ICT".to_owned()))?);
     
     Ok(())
 }

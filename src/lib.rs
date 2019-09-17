@@ -9,7 +9,7 @@
 use lazy_static::*;
 use secrecy::Secret;
 
-pub use global::SGSecret;
+pub use global::{Role, Target, SGSecret};
     /// Contains global types and methods
 pub mod global;
 pub use secrets::{secrets_engine, passphrase_engine, csprng, branca_engine, Lease, auth_storage};

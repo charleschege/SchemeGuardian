@@ -1,4 +1,4 @@
-pub use secrets_engine::{Lease, SecretType, AuthEngine, Role, Target};
+pub use secrets_engine::{Lease, SecretType, AuthEngine};
     /// SecretsEngine acts as a `secure barrier` to `issue`, `authenticate`, `authorize`, `revoke`, `reissue`, `rotate` or `encrypt` secrets;
 pub mod secrets_engine;
 

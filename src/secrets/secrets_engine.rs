@@ -4,48 +4,10 @@ use sled::Db;
 use secrecy::{Secret, ExposeSecret};
 use zeroize::Zeroize;
 
-use crate::SGError;
-use crate::secrets;
-use crate::SGSecret;
+use crate::{Role, Target, secrets, SGSecret, SGError};
 
 fn sg_auth() -> &'static str {
     "./SchemeGuardianDB/SG_AUTH"
-}
-
-    /// `Role` of the user
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub enum Role<R> {
-        /// The user with all access rights
-    SuperUser,
-        /// A user with administrative rights
-    Admin,
-        /// A user with some administrative rights
-    SubAdmin,
-        /// A normal user
-    User,
-        /// A custom role for the user
-    CustomRole(R),
-		/// Role is not specified hence the user has no rights
-	Unspecified,
-}
-
-impl<R> Default for Role<R> {
-    fn default() -> Self{ Role::User }
-}
-
-    /// `Target` is the resource being requested or route being accessed
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Target {
-        /// `Guardian` Target for accounts that have a cloud manager and a user
-    Guardian,
-        /// `Global` Target has access to administration and user routes or permissions
-    Global,
-        /// A custom role for the user
-    CustomTarget(String),
-}
-
-impl Default for Target {
-    fn default() -> Self{ Target::CustomTarget(Default::default()) }
 }
     /// `AuthPayload` creates and authenticates auth values
 #[derive(Debug, Serialize, Deserialize)]

@@ -1,14 +1,15 @@
 use serde_derive::{Serialize, Deserialize};
 use secrecy::{ExposeSecret, Secret};
-use crate::{SGSecret, Lease, SGError};
+use crate::{SGSecret, Lease, SGError, Role};
 
     /// ## Struct for simple storage
     /// ### Struct structure
     /// ```
     /// use schemeguardian::global::Lease;
-    /// use schemeguardian::SGSecret;
-    /// struct SimpleAuthStorage {
+    /// use schemeguardian::{Role, SGSecret};
+    /// struct SimpleAuthStorage<R> {
     ///     user: SGSecret,
+    ///     role: Role<R>,
     ///     target: SGSecret,
     ///     lease: Lease,
     ///     random_key: SGSecret,
@@ -17,34 +18,46 @@ use crate::{SGSecret, Lease, SGError};
     /// #### Example
     /// ```
     /// use schemeguardian::secrets::SimpleAuthStorage;
-    /// use schemeguardian::{SGSecret, Lease};
+    /// use schemeguardian::{SGSecret, Lease, Role};
     /// use chrono::Utc;
-    /// SimpleAuthStorage::new()
+    /// use serde_derive::{Serialize, Deserialize};
+    /// #[derive(Debug, Serialize, Deserialize)]
+    /// enum Custom {
+    ///     ExecutiveBoard,
+    /// }
+    /// SimpleAuthStorage::<Custom>::new()
     ///     .user(SGSecret("Foo".to_owned()))
+    ///     .role(Role::Admin)
     ///     .target(SGSecret("Bar".to_owned()))
     ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::days(7)))
     ///     .build();
     /// ```
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub struct SimpleAuthStorage {
+pub struct SimpleAuthStorage<R> {
     user: SGSecret,
+    role: Role<R>,
     target: SGSecret,
     lease: Lease,
     random_key: SGSecret,
 }
 
-impl SimpleAuthStorage {
+impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeOwned {
         /// ### Initialize a new SimpleAuthStorage
         /// #### Example
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
-        /// use schemeguardian::{SGSecret, Lease};
         /// use chrono::Utc;
-        /// let foo = SimpleAuthStorage::new();
+        /// use serde_derive::{Serialize, Deserialize};
+        /// #[derive(Debug, Serialize, Deserialize)]
+        /// enum Custom {
+        ///     ExecutiveBoard,
+        /// }
+        /// SimpleAuthStorage::<Custom>::new();
         /// ```
     pub fn new() -> Self {
         Self {
             user: Default::default(),
+            role: Role::Unspecified,
             target: Default::default(),
             lease: Default::default(),
             random_key: Default::default(),
@@ -55,7 +68,12 @@ impl SimpleAuthStorage {
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
         /// use schemeguardian::SGSecret;
-        /// SimpleAuthStorage::new()
+        /// use serde_derive::{Serialize, Deserialize};
+        /// #[derive(Debug, Serialize, Deserialize)]
+        /// enum Custom {
+        ///     ExecutiveBoard,
+        /// }
+        /// SimpleAuthStorage::<Custom>::new()
         ///     .user(SGSecret("Foo".to_owned()));
         /// ```
     pub fn user(mut self, user: SGSecret) -> Self {
@@ -63,12 +81,37 @@ impl SimpleAuthStorage {
 
         self
     }
+        /// ### Add a Role
+        /// #### Example
+        /// ```
+        /// use schemeguardian::secrets::SimpleAuthStorage;
+        /// use schemeguardian::Role;
+        /// use serde_derive::{Serialize, Deserialize};
+        /// #[derive(Debug, Serialize, Deserialize)]
+        /// enum Custom {
+        ///     ExecutiveBoard,
+        /// }
+        /// SimpleAuthStorage::<Custom>::new()
+        ///     .role(Role::Admin);
+        /// ```
+    pub fn role(mut self, value: Role<R>) -> Self {
+        self.role = value;
+
+        self
+    }
+
+      
         /// ### Add a Target
         /// #### Example
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
         /// use schemeguardian::SGSecret;
-        /// SimpleAuthStorage::new()
+        /// use serde_derive::{Serialize, Deserialize};
+        /// #[derive(Debug, Serialize, Deserialize)]
+        /// enum Custom {
+        ///     ExecutiveBoard,
+        /// }
+        /// SimpleAuthStorage::<Custom>::new()
         ///     .target(SGSecret("Bar".to_owned()));
         /// ```
     pub fn target(mut self, target: SGSecret) -> Self {
@@ -82,7 +125,12 @@ impl SimpleAuthStorage {
         /// use schemeguardian::secrets::SimpleAuthStorage;
         /// use schemeguardian::Lease;
         /// use chrono::Utc;
-        /// SimpleAuthStorage::new()
+        /// use serde_derive::{Serialize, Deserialize};
+        /// #[derive(Debug, Serialize, Deserialize)]
+        /// enum Custom {
+        ///     ExecutiveBoard,
+        /// }
+        /// SimpleAuthStorage::<Custom>::new()
         ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::days(7)));
         /// ```
     pub fn lease(mut self, lease: Lease) -> Self {
@@ -94,7 +142,12 @@ impl SimpleAuthStorage {
         /// #### Example
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
-        /// SimpleAuthStorage::new()
+        /// use serde_derive::{Serialize, Deserialize};
+        /// #[derive(Debug, Serialize, Deserialize)]
+        /// enum Custom {
+        ///     ExecutiveBoard,
+        /// }
+        /// SimpleAuthStorage::<Custom>::new()
         ///     .build();
         /// ```
     pub fn build(mut self) -> Self {
@@ -109,7 +162,12 @@ impl SimpleAuthStorage {
         /// use schemeguardian::secrets::SimpleAuthStorage;
         /// use schemeguardian::{SGSecret, Lease};
         /// use chrono::Utc;
-        /// SimpleAuthStorage::new()
+        /// use serde_derive::{Serialize, Deserialize};
+        /// #[derive(Debug, Serialize, Deserialize)]
+        /// enum Custom {
+        ///     ExecutiveBoard,
+        /// }
+        /// SimpleAuthStorage::<Custom>::new()
         ///     .user(SGSecret("Foo".to_owned()))
         ///     .target(SGSecret("Bar".to_owned()))
         ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::days(7)))
@@ -122,7 +180,7 @@ impl SimpleAuthStorage {
 
         let key = bincode::serialize(&self.user)?; 
 
-        let value = bincode::serialize::<SimpleAuthStorage>(&self)?; //TODO: Should I encrypt bearer with branca in index
+        let value = bincode::serialize::<Self>(&self)?; //TODO: Should I encrypt bearer with branca in index
 
         let dbop = db.insert(key, value)?;
 
@@ -139,10 +197,15 @@ impl SimpleAuthStorage {
         /// ```no_run
         /// use schemeguardian::secrets::SimpleAuthStorage;
         /// use schemeguardian::SGSecret;
-        /// SimpleAuthStorage::new()
+        /// use serde_derive::{Serialize, Deserialize};
+        /// #[derive(Debug, Serialize, Deserialize)]
+        /// enum Custom {
+        ///     ExecutiveBoard,
+        /// }
+        /// SimpleAuthStorage::<Custom>::new()
         ///     .get(SGSecret("foo".to_owned()));
         /// ```
-    pub fn get(self, redactable_key: SGSecret) -> Result<(custom_codes::DbOps, Option<Payload>), SGError> {
+    pub fn get(self, redactable_key: SGSecret) -> Result<(custom_codes::DbOps, Option<Payload<R>>), SGError> {
         let auth_db = sg_simple_auth();
         let db = sled::Db::open(auth_db)?;
 
@@ -154,7 +217,7 @@ impl SimpleAuthStorage {
 
         if let Some(dbvalues) = dbop {
             let data = bincode::deserialize::<Self>(&dbvalues)?;
-            Ok((custom_codes::DbOps::KeyFound, Some((data.user, data.target, data.lease, data.random_key))))
+            Ok((custom_codes::DbOps::KeyFound, Some((data.user, data.role, data.target, data.lease, data.random_key))))
         }else {
             Ok((custom_codes::DbOps::KeyNotFound, None))
         }      
@@ -164,11 +227,16 @@ impl SimpleAuthStorage {
         /// #### Example
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
-        /// use schemeguardian::SGSecret;
-        /// SimpleAuthStorage::new()
+        /// use schemeguardian::SGSecret;  
+        /// use serde_derive::{Serialize, Deserialize};      
+        /// #[derive(Debug, Serialize, Deserialize)]
+        /// enum Custom {
+        ///     ExecutiveBoard,
+        /// }
+        /// SimpleAuthStorage::<Custom>::new()
         ///     .remove(SGSecret("foo".to_owned()));
         /// ```
-    pub fn remove(self, redactable_key: SGSecret) -> Result<(custom_codes::DbOps, Option<Payload>), SGError> {
+    pub fn remove(self, redactable_key: SGSecret) -> Result<(custom_codes::DbOps, Option<Payload<R>>), SGError> {
         let auth_db = sg_simple_auth();
         let db = sled::Db::open(auth_db)?;
 
@@ -180,7 +248,7 @@ impl SimpleAuthStorage {
 
         if let Some(dbvalues) = dbop {
             let data = bincode::deserialize::<Self>(&dbvalues)?;
-            Ok((custom_codes::DbOps::Deleted, Some((data.user, data.target, data.lease, data.random_key))))
+            Ok((custom_codes::DbOps::Deleted, Some((data.user, data.role, data.target, data.lease, data.random_key))))
         }else {
             Ok((custom_codes::DbOps::KeyNotFound, None))
         } 
@@ -190,19 +258,24 @@ impl SimpleAuthStorage {
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
         /// use schemeguardian::SGSecret;
-        /// SimpleAuthStorage::new()
+        /// use serde_derive::{Serialize, Deserialize};
+        /// #[derive(Debug, Serialize, Deserialize)]
+        /// enum Custom {
+        ///     ExecutiveBoard,
+        /// }
+        /// SimpleAuthStorage::<Custom>::new()
         ///     .remove(SGSecret("foo".to_owned()));
         /// ```
-    pub fn list(self) -> Result<Vec<Payload>, SGError> {
+    pub fn list(self) -> Result<Vec<Payload<R>>, SGError> {
         let auth_db = sg_simple_auth();
         let db = sled::Db::open(auth_db)?;
-        let mut dbvalues: Vec<Payload> = Vec::new();
+        let mut dbvalues: Vec<Payload<R>> = Vec::new();
 
         db.iter().values().for_each(|data| {
             if let Ok(inner) = data {
                 match bincode::deserialize::<Self>(&inner) {
                     Ok(value) => {
-                        dbvalues.push((value.user, value.target, value.lease, value.random_key))
+                        dbvalues.push((value.user, value.role, value.target, value.lease, value.random_key))
                     },
                     Err(e) => { SGError::BincodeError(e); },
                 }
@@ -223,10 +296,15 @@ impl SimpleAuthStorage {
         /// ```should_panic
         /// use schemeguardian::secrets::SimpleAuthStorage;
         /// use schemeguardian::SGSecret;
-        /// SimpleAuthStorage::new()
+        /// use serde_derive::{Serialize, Deserialize};
+        /// #[derive(Debug, Serialize, Deserialize)]
+        /// enum Custom {
+        ///     ExecutiveBoard,
+        /// }
+        /// SimpleAuthStorage::<Custom>::new()
         ///     .authenticate(SGSecret("foo".to_owned()));
         /// ```
-    pub fn authenticate(self, redactable_key: SGSecret) -> Result<(custom_codes::AccessStatus, Option<Payload>), SGError> {
+    pub fn authenticate(self, redactable_key: SGSecret) -> Result<(custom_codes::AccessStatus, Option<Payload<R>>), SGError> {
         let auth_db = sg_simple_auth();
         let db = sled::Db::open(auth_db)?;
 
@@ -245,13 +323,13 @@ impl SimpleAuthStorage {
                         Ok((custom_codes::AccessStatus::Expired, None))
                     }else {
                         if &payload.random_key.0 == user_random_key {
-                            Ok((custom_codes::AccessStatus::Granted, Some((payload.user, payload.target, payload.lease, payload.random_key))))
+                            Ok((custom_codes::AccessStatus::Granted, Some((payload.user, payload.role, payload.target, payload.lease, payload.random_key))))
                         }else {
                             Ok((custom_codes::AccessStatus::RejectedRAC, None))
                         }
                     }
                 },
-                Lease::Lifetime => Ok((custom_codes::AccessStatus::Granted, Some((payload.user, payload.target, payload.lease, payload.random_key)))),
+                Lease::Lifetime => Ok((custom_codes::AccessStatus::Granted, Some((payload.user, payload.role, payload.target, payload.lease, payload.random_key)))),
                 _ => Ok((custom_codes::AccessStatus::Rejected, None))
             }            
         }else {
@@ -272,14 +350,15 @@ fn sg_simple_auth() -> &'static str {
 }
     /// A return value to an of the operation. It contains the payload of the AuthPayload 
     ///
-    /// `(user, target, lease, SGSecret)`
+    /// `(user, role, target, lease, random_key)`
     /// ## Example
     /// ```no_run
     /// use schemeguardian::secrets::auth_storage::Payload;
+    /// use schemeguardian::Role;
     /// enum MyUserEnum {Foo, Bar}
-    /// fn fetch_from_db() -> Payload {
+    /// fn fetch_from_db<R>() -> Payload<R> {
     ///     // some code here
-    ///     (Default::default(), Default::default(), Default::default(), Default::default())
+    ///     (Default::default(), Role::Unspecified, Default::default(), Default::default(), Default::default())
     /// }
     /// ```
-pub type Payload = (SGSecret, SGSecret, Lease, SGSecret);
+pub type Payload<R> = (SGSecret, Role<R>, SGSecret, Lease, SGSecret);
