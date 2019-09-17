@@ -16,7 +16,7 @@ fn main() -> Result<(), SGError>{
             println!("{:?}", d2.0);
         };*/
 
-    println!("{:?}", {
+    /*println!("{:?}", {
         let data = SimpleAuthStorage::new()
             .user(SGSecret("x43".to_owned()))
             .target(SGSecret("ICT".to_owned()))
@@ -24,11 +24,11 @@ fn main() -> Result<(), SGError>{
             .build()
             .insert()?.1;
         let f = data.expose_secret().clone(); f
-    });
+    });*/
 
     // x43:::xqktmxali4ajqfgw6zbv4zwem7amlnxqchgdzj8jyfelmsvizmssmveqrktal5fq:::ICT
     println!("{:?}", SimpleAuthStorage::new()
-        .authenticate(SGSecret("x43:::xqktmxali4ajqfgw6zbv4zwem7amlnxqchgdzj8jyfelmsvizmssmveqrktal5fq:::ICT".to_owned()))?);
+        .authenticate(SGSecret("x43:::yqvnfgcum4o8meun2lcbjc7ymiubwkqhpmtcu6mpi4pcnzbdmdjpp0ddbjf3js1e:::ICT".to_owned()))?);
     
     Ok(())
 }

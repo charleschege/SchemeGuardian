@@ -6,3 +6,4 @@ Check for all TODOs with the `!DONE` comment
 [customize rust_argon2 Config from toml]
 
 [simple Auth Manager] => DONE
+[Open the database at main and keep it open]
