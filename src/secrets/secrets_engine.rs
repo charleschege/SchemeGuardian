@@ -85,7 +85,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
         }        
     }
         /// Create a new branca encoded token
-    pub fn issue(self) -> Result<(custom_codes::DbOps, Secret<String>, Option<AuthPayload<R>>), SGError> {
+    pub fn issue(self) -> Result<(custom_codes::DbOps, SGSecret, Option<AuthPayload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::open(auth_db)?;
 
