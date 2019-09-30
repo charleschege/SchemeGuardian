@@ -1,7 +1,6 @@
 use serde_derive::{Serialize, Deserialize};
 use chrono::prelude::*;
 use sled::Db;
-use secrecy::{Secret, ExposeSecret};
 use zeroize::Zeroize;
 
 use crate::{Role, Target, secrets, SGSecret, SGError};
@@ -15,7 +14,7 @@ pub struct AuthPayload<R> {
     role: Role<R>,
     target: Target,
     lease: Lease,
-    random_key: String,
+    random_key: SGSecret,
 }
 
     /// `AuthEngine` creates and authenticates authorization/authentication secrets
@@ -34,13 +33,13 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
                 role: Default::default(), 
                 target: Default::default(), 
                 lease: Default::default(),
-                random_key: secrets::random64alpha().expose_secret().to_owned(),
+                random_key: secrets::random64alpha(),
             }
         }
     }
         /// The username or client name  
-    pub fn bearer(mut self, bearer: Secret<String>) -> Self {
-        self.bearer = SGSecret(bearer.expose_secret().clone().to_owned());
+    pub fn bearer(mut self, bearer: SGSecret) -> Self {
+        self.bearer = bearer;
         
         self
     }
@@ -58,14 +57,14 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
     }
         /// Target for the operation
     pub fn target(mut self, attr: Target) -> Self {
-        self.payload.random_key = secrets::random64alpha().expose_secret().to_owned();
+        self.payload.random_key = secrets::random64alpha();
         self.payload.target = attr;
         
         self
     }
 
         /// Insert new token
-    pub fn insert(self) -> Result<(custom_codes::DbOps, Secret<String>, Option<AuthPayload<R>>), SGError> {
+    pub fn insert(self) -> Result<(custom_codes::DbOps, SGSecret, Option<AuthPayload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::open(auth_db)?;
 
@@ -79,9 +78,9 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
 
         if let Some(updated) = dbop {
             let data = bincode::deserialize::<AuthPayload<R>>(&updated)?;
-            Ok((custom_codes::DbOps::Modified, Secret::new(bearer_key), Some(data)))
+            Ok((custom_codes::DbOps::Modified, SGSecret(bearer_key), Some(data)))
         }else {
-            Ok((custom_codes::DbOps::Inserted, Secret::new(bearer_key), None))
+            Ok((custom_codes::DbOps::Inserted, SGSecret(bearer_key), None))
         }        
     }
         /// Create a new branca encoded token
@@ -96,7 +95,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
         let dbop = db.insert(key, value)?;
 
         let raw_key = self.bearer.0.clone() + ":::" + &self.payload.random_key;
-        let bearer_key = crate::secrets::branca_encode(Secret::new(raw_key))?;
+        let bearer_key = crate::secrets::branca_encode(SGSecret(raw_key))?;
 
         if let Some(updated) = dbop {
             let data = bincode::deserialize::<AuthPayload<R>>(&updated)?;
@@ -107,11 +106,11 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
     }
         
         /// Authenticate an existing token
-    pub fn get(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps, Option<Payload<R>>), SGError> {
+    pub fn get(self, raw_key: SGSecret) -> Result<(custom_codes::DbOps, Option<Payload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::open(auth_db)?;
 
-        let raw_key = raw_key.expose_secret();
+        let raw_key = &raw_key.0;
         let dual = raw_key.split(":::").collect::<Vec<&str>>();
         let key = bincode::serialize(dual[0])?;
 
@@ -131,11 +130,11 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
         ///     `custom_codes::AccessStatus::Granted` for a secret that is live and RAC is authenticated
         ///     `custom_codes::AccessStatus::RejectedRAC` for a secret that is live but the RAC is not authentic
         ///     `custom_codes::AccessStatus::Rejected` for a secret that cannot be authenticated
-    pub fn authenticate(self, raw_key: Secret<String>) -> Result<(custom_codes::AccessStatus, Option<Payload<R>>), SGError> {
+    pub fn authenticate(self, raw_key: SGSecret) -> Result<(custom_codes::AccessStatus, Option<Payload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::open(auth_db)?;
 
-        let raw_key = raw_key.expose_secret();
+        let raw_key = &raw_key.0;
         let dual = raw_key.split(":::").collect::<Vec<&str>>();
 
         let key = bincode::serialize(dual[0])?;
@@ -150,7 +149,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
                     if Utc::now() > datetime {
                         Ok((custom_codes::AccessStatus::Expired, None))
                     }else {
-                        if payload.random_key == user_random_key {
+                        if payload.random_key.0 == user_random_key.to_owned() {
                             Ok((custom_codes::AccessStatus::Granted, Some((payload.role, payload.target))))
                         }else {
                             Ok((custom_codes::AccessStatus::RejectedRAC, None))
@@ -166,11 +165,11 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
     }
 
         /// Remove a secret from the database
-    pub fn rm<'d>(self, raw_key: Secret<String>) -> Result<(custom_codes::DbOps, Option<FullPayload<R>>), SGError> {
+    pub fn rm<'d>(self, raw_key: SGSecret) -> Result<(custom_codes::DbOps, Option<FullPayload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::open(auth_db)?;
 
-        let raw_key = raw_key.expose_secret();
+        let raw_key = &raw_key.0;
         let dual = raw_key.split(":::").collect::<Vec<&str>>();
         let key = bincode::serialize(dual[0])?;
 
@@ -222,7 +221,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
 }
 
     /// A return value to an of the operation. It `contains the payload of the AuthPayload` from `AuthEngine`
-pub type FullPayload<R> = (Role<R>, Lease, Target, String);
+pub type FullPayload<R> = (Role<R>, Lease, Target, SGSecret);
 
     /// A return value to an of the operation. It contains the payload of the AuthPayload values `Role` & `Target`
 pub type Payload<R> = (Role<R>, Target);

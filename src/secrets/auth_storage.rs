@@ -1,5 +1,4 @@
 use serde_derive::{Serialize, Deserialize};
-use secrecy::{ExposeSecret, Secret};
 use crate::{SGSecret, Lease, SGError, Role};
 
     /// ## Struct for simple storage
@@ -151,7 +150,7 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         ///     .build();
         /// ```
     pub fn build(mut self) -> Self {
-        self.random_key = SGSecret(crate::secrets::random64alpha().expose_secret().to_owned());
+        self.random_key = SGSecret(crate::secrets::random64alpha().0.to_owned());
 
         self
     }
@@ -174,7 +173,7 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         ///     .build()
         ///     .insert();
         /// ```
-    pub fn insert(self) -> Result<(custom_codes::DbOps, Secret<String>), SGError> {
+    pub fn insert(self) -> Result<(custom_codes::DbOps, SGSecret), SGError> {
         let auth_db = sg_simple_auth();
         let db = sled::Db::open(auth_db)?;
 
@@ -184,7 +183,7 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
 
         let dbop = db.insert(key, value)?;
 
-        let bearer_key = Secret::new(self.user.0.clone() + ":::" + &self.random_key + ":::" + &self.target);
+        let bearer_key = SGSecret(self.user.0.clone() + ":::" + &self.random_key + ":::" + &self.target);
 
         if let Some(_) = dbop {
             Ok((custom_codes::DbOps::Modified, bearer_key))
