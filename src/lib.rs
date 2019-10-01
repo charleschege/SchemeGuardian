@@ -1,6 +1,6 @@
 #![deny(unsafe_code)]
 #![deny(missing_docs)]
-#![deny(missing_doc_code_examples)]
+//#![deny(missing_doc_code_examples)]
 
 //! # SchemeGuardian
 //! Secrets Authrorization, Authentication, Verification and Encryption Manager with Key-Value Storage

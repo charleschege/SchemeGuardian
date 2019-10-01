@@ -26,7 +26,7 @@ lazy_static = "1.3.0"
 #ENCRYPTION AND AUTHENTICATION PRNG
 #orion = "0.14.2"
 branca = "0.9.0"
-rand = "0.7"
+rand = { version = "0.7", default-features = false }
 rusty_ulid = "0.9.0"
 rust-argon2 = "0.5.0"
 

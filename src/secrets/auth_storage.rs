@@ -9,7 +9,7 @@ use crate::{SGSecret, Lease, SGError, Role};
     /// struct SimpleAuthStorage<R> {
     ///     user: SGSecret,
     ///     role: Role<R>,
-    ///     target: SGSecret,
+    ///     target: Option<SGSecret>,
     ///     lease: Lease,
     ///     random_key: SGSecret,
     /// }
@@ -35,7 +35,7 @@ use crate::{SGSecret, Lease, SGError, Role};
 pub struct SimpleAuthStorage<R> {
     user: SGSecret,
     role: Role<R>,
-    target: SGSecret,
+    target: Option<SGSecret>,
     lease: Lease,
     random_key: SGSecret,
 }
@@ -114,7 +114,7 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         ///     .target(SGSecret("Bar".to_owned()));
         /// ```
     pub fn target(mut self, target: SGSecret) -> Self {
-        self.target = target;
+        self.target = Some(target);
 
         self
     }
@@ -168,7 +168,7 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         /// }
         /// SimpleAuthStorage::<Custom>::new()
         ///     .user(SGSecret("Foo".to_owned()))
-        ///     .target(SGSecret("Bar".to_owned()))
+        ///     .target(None)
         ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::days(7)))
         ///     .build()
         ///     .insert();
@@ -179,11 +179,11 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
 
         let key = bincode::serialize(&self.user)?; 
 
-        let value = bincode::serialize::<Self>(&self)?; //TODO: Should I encrypt bearer with branca in index
+        let value = bincode::serialize::<Self>(&self)?;
 
         let dbop = db.insert(key, value)?;
 
-        let bearer_key = SGSecret(self.user.0.clone() + ":::" + &self.random_key + ":::" + &self.target);
+        let bearer_key = SGSecret(self.user.0.clone() + ":::" + &self.random_key);
 
         if let Some(_) = dbop {
             Ok((custom_codes::DbOps::Modified, bearer_key))
@@ -360,4 +360,4 @@ fn sg_simple_auth() -> &'static str {
     ///     (Default::default(), Role::Unspecified, Default::default(), Default::default(), Default::default())
     /// }
     /// ```
-pub type Payload<R> = (SGSecret, Role<R>, SGSecret, Lease, SGSecret);
+pub type Payload<R> = (SGSecret, Role<R>, Option<SGSecret>, Lease, SGSecret);
