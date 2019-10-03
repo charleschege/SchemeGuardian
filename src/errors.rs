@@ -3,6 +3,9 @@ use failure::Fail;
     /// `SGError` is the main error type
 #[derive(Fail, Debug)]
 pub enum SGError {
+        /// SGError Default Error type
+    #[fail(display = "DefaultError")]
+    DefaultError,
         /// Branca Error type `branca::errors::Error`
     #[fail(display = "{}", _0)]
     BrancaError(#[cause] branca::errors::Error),
@@ -33,6 +36,12 @@ pub enum SGError {
         /// Error when passphrase length is larger that 1KB (`input.len() / 1024`) in size to prevent DOS attack
     #[fail(display = "[PASSPHRASE_TOO_LARGE]\nThe length of the user input is unresonably large which can cause a DOS attack")]
     PassphraseTooLarge,
+}
+
+impl Default for SGError {
+    fn default() -> Self {
+        SGError::DefaultError
+    }
 }
 
 impl std::convert::From<branca::errors::Error> for SGError {
