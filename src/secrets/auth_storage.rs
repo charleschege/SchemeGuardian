@@ -113,7 +113,7 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         /// SimpleAuthStorage::<Custom>::new()
         ///     .target(SGSecret("Bar".to_owned()));
         /// ```
-    pub fn target(mut self, target: SGSecret) -> Self {
+    pub fn target(mut self, target: Option<SGSecret>) -> Self {
         self.target = Some(target);
 
         self
