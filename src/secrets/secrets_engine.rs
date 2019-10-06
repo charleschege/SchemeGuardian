@@ -1,9 +1,9 @@
 use serde_derive::{Serialize, Deserialize};
 use chrono::prelude::*;
 use sled::Db;
-use zeroize::Zeroize;
+use secrecy::{SecretString, ExposeSecret};
 
-use crate::{Role, Target, secrets, SGSecret, SGError};
+use crate::{Role, Target, secrets, SGError};
 
 fn sg_auth() -> &'static str {
     "./SchemeGuardianDB/SG_AUTH"
@@ -14,13 +14,13 @@ pub struct AuthPayload<R> {
     role: Role<R>,
     target: Target,
     lease: Lease,
-    random_key: SGSecret,
+    random_key: SecretString,
 }
 
     /// `AuthEngine` creates and authenticates authorization/authentication secrets
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuthEngine<R> {
-    bearer: SGSecret,
+    bearer: SecretString,
     payload: AuthPayload<R>,
 }
 
@@ -38,7 +38,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
         }
     }
         /// The username or client name  
-    pub fn bearer(mut self, bearer: SGSecret) -> Self {
+    pub fn bearer(mut self, bearer: SecretString) -> Self {
         self.bearer = bearer;
         
         self
@@ -64,38 +64,38 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
     }
 
         /// Insert new token
-    pub fn insert(self) -> Result<(custom_codes::DbOps, SGSecret, Option<AuthPayload<R>>), SGError> {
+    pub fn insert(self) -> Result<(custom_codes::DbOps, SecretString, Option<AuthPayload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::open(auth_db)?;
 
-        let key = bincode::serialize(&self.bearer.0)?; 
+        let key = bincode::serialize(&self.bearer.expose_secret())?; 
 
         let value = bincode::serialize::<AuthPayload<R>>(&self.payload)?; //TODO: Should I encrypt bearer with branca in index
 
         let dbop = db.insert(key, value)?;
 
-        let bearer_key = self.bearer.0.clone() + ":::" + &self.payload.random_key;
+        let bearer_key = self.bearer.expose_secret().clone() + ":::" + &self.payload.random_key;
 
         if let Some(updated) = dbop {
             let data = bincode::deserialize::<AuthPayload<R>>(&updated)?;
-            Ok((custom_codes::DbOps::Modified, SGSecret(bearer_key), Some(data)))
+            Ok((custom_codes::DbOps::Modified, SecretString::new(bearer_key), Some(data)))
         }else {
-            Ok((custom_codes::DbOps::Inserted, SGSecret(bearer_key), None))
+            Ok((custom_codes::DbOps::Inserted, SecretString::new(bearer_key), None))
         }        
     }
         /// Create a new branca encoded token
-    pub fn issue(self) -> Result<(custom_codes::DbOps, SGSecret, Option<AuthPayload<R>>), SGError> {
+    pub fn issue(self) -> Result<(custom_codes::DbOps, SecretString, Option<AuthPayload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::open(auth_db)?;
 
-        let key = bincode::serialize(&self.bearer.0)?; 
+        let key = bincode::serialize(&self.bearer.expose_secret())?; 
 
         let value = bincode::serialize::<AuthPayload<R>>(&self.payload)?; //TODO: Should I encrypt bearer with branca in index
 
         let dbop = db.insert(key, value)?;
 
-        let raw_key = self.bearer.0.clone() + ":::" + &self.payload.random_key;
-        let bearer_key = crate::secrets::branca_encode(SGSecret(raw_key))?;
+        let raw_key = self.bearer.expose_secret().clone() + ":::" + &self.payload.random_key;
+        let bearer_key = crate::secrets::branca_encode(SecretString::new(raw_key))?;
 
         if let Some(updated) = dbop {
             let data = bincode::deserialize::<AuthPayload<R>>(&updated)?;
@@ -106,11 +106,11 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
     }
         
         /// Authenticate an existing token
-    pub fn get(self, raw_key: SGSecret) -> Result<(custom_codes::DbOps, Option<Payload<R>>), SGError> {
+    pub fn get(self, raw_key: SecretString) -> Result<(custom_codes::DbOps, Option<Payload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::open(auth_db)?;
 
-        let raw_key = &raw_key.0;
+        let raw_key = &raw_key.expose_secret();
         let dual = raw_key.split(":::").collect::<Vec<&str>>();
         let key = bincode::serialize(dual[0])?;
 
@@ -130,11 +130,11 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
         ///     `custom_codes::AccessStatus::Granted` for a secret that is live and RAC is authenticated
         ///     `custom_codes::AccessStatus::RejectedRAC` for a secret that is live but the RAC is not authentic
         ///     `custom_codes::AccessStatus::Rejected` for a secret that cannot be authenticated
-    pub fn authenticate(self, raw_key: SGSecret) -> Result<(custom_codes::AccessStatus, Option<Payload<R>>), SGError> {
+    pub fn authenticate(self, raw_key: SecretString) -> Result<(custom_codes::AccessStatus, Option<Payload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::open(auth_db)?;
 
-        let raw_key = &raw_key.0;
+        let raw_key = &raw_key.expose_secret();
         let dual = raw_key.split(":::").collect::<Vec<&str>>();
 
         let key = bincode::serialize(dual[0])?;
@@ -149,7 +149,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
                     if Utc::now() > datetime {
                         Ok((custom_codes::AccessStatus::Expired, None))
                     }else {
-                        if payload.random_key.0 == user_random_key.to_owned() {
+                        if payload.random_key.expose_secret() == &user_random_key.to_owned() {
                             Ok((custom_codes::AccessStatus::Granted, Some((payload.role, payload.target))))
                         }else {
                             Ok((custom_codes::AccessStatus::RejectedRAC, None))
@@ -165,11 +165,11 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
     }
 
         /// Remove a secret from the database
-    pub fn rm<'d>(self, raw_key: SGSecret) -> Result<(custom_codes::DbOps, Option<FullPayload<R>>), SGError> {
+    pub fn rm<'d>(self, raw_key: SecretString) -> Result<(custom_codes::DbOps, Option<FullPayload<R>>), SGError> {
         let auth_db = sg_auth();
         let db = Db::open(auth_db)?;
 
-        let raw_key = &raw_key.0;
+        let raw_key = &raw_key.expose_secret();
         let dual = raw_key.split(":::").collect::<Vec<&str>>();
         let key = bincode::serialize(dual[0])?;
 
@@ -221,7 +221,7 @@ impl<'e, R> AuthEngine<R> where R: std::fmt::Debug + std::cmp::PartialEq + std::
 }
 
     /// A return value to an of the operation. It `contains the payload of the AuthPayload` from `AuthEngine`
-pub type FullPayload<R> = (Role<R>, Lease, Target, SGSecret);
+pub type FullPayload<R> = (Role<R>, Lease, Target, SecretString);
 
     /// A return value to an of the operation. It contains the payload of the AuthPayload values `Role` & `Target`
 pub type Payload<R> = (Role<R>, Target);
@@ -248,8 +248,7 @@ impl Default for Lease {
 }
 
     /// Type of `secret`
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Zeroize)]
-#[zeroize(drop)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd)]
 pub enum SecretType {
         /// A normal cookie
     Cookie,

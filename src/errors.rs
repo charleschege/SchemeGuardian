@@ -24,9 +24,9 @@ pub enum SGError {
         /// String error handling for `num::TryFromIntError` errors
     #[fail(display = "{}", _0)]
     TryFromIntError(#[cause] std::num::TryFromIntError),
-        /// String error handling for `serde_json::error::Error` errors
+        /*/// String error handling for `serde_json::error::Error` errors
     #[fail(display = "{}", _0)]
-    SerdeJsonError(#[cause] serde_json::error::Error),
+    SerdeJsonError(#[cause] serde_json::error::Error),*/
         /// String error handling for `argon2::error::Error` errors
     #[fail(display = "{}", _0)]
     Argon2Error(#[cause] argon2::Error),
@@ -79,12 +79,12 @@ impl std::convert::From<std::num::TryFromIntError> for SGError {
         SGError::TryFromIntError(error)
     }
 }
-
+/*
 impl std::convert::From<serde_json::error::Error> for SGError {
     fn from(error: serde_json::error::Error) -> Self {
         SGError::SerdeJsonError(error)
     }
-}
+}*/
 
 impl std::convert::From<argon2::Error> for SGError {
     fn from(error: argon2::Error) -> Self {

@@ -1,18 +1,13 @@
 use serde_derive::{Serialize, Deserialize};
-use zeroize::Zeroize;
-use secrecy::{DebugSecret, CloneableSecret};
+use secrecy::{SecretString, DebugSecret, ExposeSecret};
 use argon2::{self, ThreadMode, Variant, Version};
 use crate::SG_SECRET_KEYS;
 use crate::secrets::random64alpha;
-use crate::{SGSecret, SGError};
+use crate::SGError;
 
     /// Passphrase Engine handles generation and authentication of passphrases
-#[derive(Debug, Serialize, Deserialize, Zeroize, Clone)]
-#[serde(deny_unknown_fields)]
-#[zeroize(drop)]
-pub struct Passphrase(String);
-
-impl CloneableSecret for Passphrase {}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Passphrase(SecretString);
 
 impl DebugSecret for Passphrase {
     fn debug_secret() -> &'static str {
@@ -21,38 +16,38 @@ impl DebugSecret for Passphrase {
 }
 
 impl Default for Passphrase {
-    fn default() -> Self{ Self(String::default()) }
+    fn default() -> Self{ Self(SecretString::new("R3DACT3D::<Default>::S3CR3T".to_owned())) }
 }
 
 impl Passphrase {
         /// Initialize an empty `Passphrase` struct
     pub fn new() -> Self {
-        Self(Default::default())
+        Self::default()
     }
         /// Add the passphrase to the `Passphrase` struct
-    pub fn secret(mut self, value: SGSecret) -> Self {
-        self.0 = value.0.trim().to_owned();
+    pub fn secret(mut self, value: SecretString) -> Self {
+        self.0 = SecretString::new(value.expose_secret().trim().to_owned());
 
         self
     }
         /// Generate a new passphrase
-    pub fn issue(&self) -> Result<SGSecret, SGError> {
+    pub fn issue(&self) -> Result<SecretString, SGError> {
 
-        if self.0.len() == 0 {
+        if self.0.expose_secret().len() == 0 {
             return Err(SGError::PassphraseEmpty);
-        }else if self.0.len() / 1024 <= 1 {
-            Ok(SGSecret(argon2::hash_encoded(&bincode::serialize(&self.0)?, &bincode::serialize(&random64alpha().0)?, &argon2_config())?))
+        }else if self.0.expose_secret().len() / 1024 <= 1 {
+            Ok(SecretString::new(argon2::hash_encoded(&bincode::serialize(self.0.expose_secret())?, &bincode::serialize(&random64alpha().expose_secret())?, &argon2_config())?))
         }else {
             Err(SGError::PassphraseTooLarge)
         }
     }
         /// Authenticate a passphrase
-    pub fn authenticate(&self, hashed: SGSecret) -> Result<custom_codes::AccessStatus, SGError> {
+    pub fn authenticate(&self, hashed: SecretString) -> Result<custom_codes::AccessStatus, SGError> {
         
-        if self.0.len() == 0 {
+        if self.0.expose_secret().len() == 0 {
             return Err(SGError::PassphraseEmpty);
-        }else if self.0.len() / 1024 <= 1 {
-            match argon2::verify_encoded_ext(&hashed.0, &bincode::serialize(&self.0)?, &SG_SECRET_KEYS.default.0.as_bytes(), &[])? {
+        }else if self.0.expose_secret().len() / 1024 <= 1 {
+            match argon2::verify_encoded_ext(&hashed.expose_secret(), &bincode::serialize(&self.0)?, &SG_SECRET_KEYS.default.expose_secret().as_bytes(), &[])? {
                 true => Ok(custom_codes::AccessStatus::Granted),
                 false => Ok(custom_codes::AccessStatus::Denied),
             }
@@ -73,7 +68,7 @@ fn argon2_config() -> argon2::Config<'static> {
         time_cost: 3,
         lanes: 4,
         thread_mode: ThreadMode::Parallel,
-        secret: &SG_SECRET_KEYS.default.0.as_bytes(),
+        secret: &SG_SECRET_KEYS.default.expose_secret().as_bytes(),
         ad: &[],
         hash_length: 32,
     }

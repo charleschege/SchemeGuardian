@@ -1,13 +1,13 @@
 use std::iter;
-use crate::SGSecret;
+use secrecy::SecretString;
 use rand::distributions::Alphanumeric;
 use rand::{Rng, thread_rng};
 
     /// Generate a random u64 Alphanumeric key to be stored in a Secret<String>
-pub fn random64alpha() -> SGSecret{
+pub fn random64alpha() -> SecretString{
     let mut rng = thread_rng();
     
-    SGSecret(
+    SecretString::new(
         iter::repeat(())
         .map(|()| rng.sample(Alphanumeric))
         .take(64)

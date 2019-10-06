@@ -1,25 +1,20 @@
 use serde_derive::{Serialize, Deserialize};
-use schemeguardian::{SGSecret, SGError};
+use schemeguardian::{SGError, Lease, Role};
+use secrecy::{SecretString, ExposeSecret};
 use schemeguardian::secrets::SimpleAuthStorage;
 
-fn main() -> Result<(), SGError>{    
-    /*println!("{:?}", SimpleAuthStorage::new()
-        .user(SGSecret("x43".to_owned()))
-        .target(SGSecret("ICT".to_owned()))
-        .lease(Lease::DateExpiry(chrono::Utc::now() + chrono::Duration::days(7)))
-        .build()
-        .insert()?);*/
+fn main() -> Result<(), SGError>{   
 
-    /*if let Some(data) = SimpleAuthStorage::new()
-        .get(SGSecret("x43".to_owned()))?.1{
-            let d2  = data.3;
-            println!("{:?}", d2.0);
-        };*/
+    /*if let Some(data) = SimpleAuthStorage::<CustomUser>::new()
+        .get(SecretString::new("x43".to_owned()))?.1{
+            println!("{:?}", data);
+    };*/
 
     /*println!("{:?}", {
         let data = SimpleAuthStorage::<CustomUser>::new()
-            .user(SGSecret("x43".to_owned()))
-            .target(SGSecret("ICT".to_owned()))
+            .user(SecretString::new("x43".to_owned()))
+            .role(Role::CustomRole(CustomUser::InstitutionAdmin))
+            .target(Some(SecretString::new("ICT".to_owned())))
             .lease(Lease::DateExpiry(chrono::Utc::now() + chrono::Duration::days(7)))
             .build()
             .insert()?.1;
@@ -28,11 +23,26 @@ fn main() -> Result<(), SGError>{
 
     #[derive(Debug, Serialize, Deserialize)]
     enum CustomUser {
+        InstitutionAdmin,
+        InstitutionSubAdmin,
         Lecturer,
         Accounts,
     }
-    println!("{:?}", SimpleAuthStorage::<CustomUser>::new()
-        .authenticate(SGSecret("x43:::cgz569mu0mz0etyoffdyckta7mexlgssrct3m0054wgcleiiekuo2xgyvsjhvy6y:::ICT".to_owned()))?);
+
+    
+    let data = SimpleAuthStorage::<CustomUser>::new()
+        .authenticate(SecretString::new("x43:::vs9mdrzyf037jzjwxlhyfoekobgfioydahw65vvhfcmzktqwbxsafl1d22n0frlb".to_owned()))?;
+
+    match data.1 {
+        Some(val) => {
+            println!("[{:?}] - [USER]: {:?}", data.0, val.0.expose_secret());
+            println!("[{:?}] - [ROLE]: {:?}", data.0, val.1);
+            if let Some(inner) = val.2 { println!("[{:?}] - [TARGET]: {:?}", data.0, inner.expose_secret().as_str()) } else { println!("[{:?}] - [TARGET]:", Role::<CustomUser>::Unspecified) };
+            println!("[{:?}] - [LEASE]: {:?}", data.0, val.3);
+            println!("[{:?}] - [KEY]: {:?}", data.0, val.4.expose_secret());
+        },
+        None => println!("[{:?}] - THIS IS A DESERT!!!", data.0),
+    }
     
     Ok(())
 }

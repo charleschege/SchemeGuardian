@@ -1,4 +1,4 @@
-use crate::SGSecret;
+use secrecy::SecretString;
 use serde_derive::Deserialize;
 use std::fs;
 
@@ -6,9 +6,9 @@ use std::fs;
 #[derive(Debug, Deserialize)]
 pub struct SgTomlSecrets {
         ///Default secret key used on all positions
-    pub default: SGSecret,
+    pub default: SecretString,
         /// Expose the branca field to public API to make it easier to use
-    pub branca: SGSecret,
+    pub branca: SecretString,
 }
 
     /// SGConfig struct fetches configuration stored in `SchemeGuardian.toml` file
@@ -20,7 +20,7 @@ pub struct SGConfig {
 impl SGConfig {
         /// Create a new empty SGConfig struct that returns self 
     pub fn new() -> Self {
-        Self{ secrets: SgTomlSecrets { default: Default::default(), branca: Default::default() } }
+        Self{ secrets: SgTomlSecrets { default: SecretString::default(), branca: SecretString::default() } }
     }
         /// Extract branca encryption key from `SchemeGuardian.toml` file
     pub fn secrets(mut self) -> SgTomlSecrets {

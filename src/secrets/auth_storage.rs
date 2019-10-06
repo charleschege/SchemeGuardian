@@ -1,23 +1,24 @@
 use serde_derive::{Serialize, Deserialize};
-use crate::{SGSecret, Lease, SGError, Role};
+use secrecy::{SecretString, ExposeSecret};
+use crate::{Lease, SGError, Role};
 
     /// ## Struct for simple storage
     /// ### Struct structure
     /// ```
     /// use schemeguardian::global::Lease;
-    /// use schemeguardian::{Role, SGSecret};
+    /// use schemeguardian::{Role, SecretString};
     /// struct SimpleAuthStorage<R> {
-    ///     user: SGSecret,
+    ///     user: SecretString,
     ///     role: Role<R>,
-    ///     target: Option<SGSecret>,
+    ///     target: Option<SecretString>,
     ///     lease: Lease,
-    ///     random_key: SGSecret,
+    ///     random_key: SecretString,
     /// }
     /// ```
     /// #### Example
     /// ```
     /// use schemeguardian::secrets::SimpleAuthStorage;
-    /// use schemeguardian::{SGSecret, Lease, Role};
+    /// use schemeguardian::{SecretString, Lease, Role};
     /// use chrono::Utc;
     /// use serde_derive::{Serialize, Deserialize};
     /// #[derive(Debug, Serialize, Deserialize)]
@@ -25,19 +26,19 @@ use crate::{SGSecret, Lease, SGError, Role};
     ///     ExecutiveBoard,
     /// }
     /// SimpleAuthStorage::<Custom>::new()
-    ///     .user(SGSecret("Foo".to_owned()))
+    ///     .user(SecretString::new("Foo".to_owned()))
     ///     .role(Role::Admin)
-    ///     .target(SGSecret("Bar".to_owned()))
+    ///     .target(SecretString::new("Bar".to_owned()))
     ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::days(7)))
     ///     .build();
     /// ```
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct SimpleAuthStorage<R> {
-    user: SGSecret,
+    user: SecretString,
     role: Role<R>,
-    target: Option<SGSecret>,
+    target: Option<SecretString>,
     lease: Lease,
-    random_key: SGSecret,
+    random_key: SecretString,
 }
 
 impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeOwned {
@@ -55,27 +56,27 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         /// ```
     pub fn new() -> Self {
         Self {
-            user: Default::default(),
+            user: SecretString::default(),
             role: Role::Unspecified,
             target: Default::default(),
             lease: Default::default(),
-            random_key: Default::default(),
+            random_key: SecretString::default(),
         }
     }
         /// ### Add a User
         /// #### Example
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
-        /// use schemeguardian::SGSecret;
+        /// use schemeguardian::SecretString;
         /// use serde_derive::{Serialize, Deserialize};
         /// #[derive(Debug, Serialize, Deserialize)]
         /// enum Custom {
         ///     ExecutiveBoard,
         /// }
         /// SimpleAuthStorage::<Custom>::new()
-        ///     .user(SGSecret("Foo".to_owned()));
+        ///     .user(SecretString::new("Foo".to_owned()));
         /// ```
-    pub fn user(mut self, user: SGSecret) -> Self {
+    pub fn user(mut self, user: SecretString) -> Self {
         self.user = user;
 
         self
@@ -104,17 +105,17 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         /// #### Example
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
-        /// use schemeguardian::SGSecret;
+        /// use schemeguardian::SecretString;
         /// use serde_derive::{Serialize, Deserialize};
         /// #[derive(Debug, Serialize, Deserialize)]
         /// enum Custom {
         ///     ExecutiveBoard,
         /// }
         /// SimpleAuthStorage::<Custom>::new()
-        ///     .target(SGSecret("Bar".to_owned()));
+        ///     .target(SecretString::new("Bar".to_owned()));
         /// ```
-    pub fn target(mut self, target: Option<SGSecret>) -> Self {
-        self.target = Some(target);
+    pub fn target(mut self, target: Option<SecretString>) -> Self {
+        self.target = target;
 
         self
     }
@@ -150,7 +151,7 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         ///     .build();
         /// ```
     pub fn build(mut self) -> Self {
-        self.random_key = SGSecret(crate::secrets::random64alpha().0.to_owned());
+        self.random_key = crate::secrets::random64alpha();
 
         self
     }
@@ -159,7 +160,7 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         /// #### Example
         /// ```no_run
         /// use schemeguardian::secrets::SimpleAuthStorage;
-        /// use schemeguardian::{SGSecret, Lease};
+        /// use schemeguardian::{SecretString, Lease};
         /// use chrono::Utc;
         /// use serde_derive::{Serialize, Deserialize};
         /// #[derive(Debug, Serialize, Deserialize)]
@@ -167,13 +168,13 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         ///     ExecutiveBoard,
         /// }
         /// SimpleAuthStorage::<Custom>::new()
-        ///     .user(SGSecret("Foo".to_owned()))
+        ///     .user(SecretString::new("Foo".to_owned()))
         ///     .target(None)
         ///     .lease(Lease::DateExpiry(Utc::now() + chrono::Duration::days(7)))
         ///     .build()
         ///     .insert();
         /// ```
-    pub fn insert(self) -> Result<(custom_codes::DbOps, SGSecret), SGError> {
+    pub fn insert(self) -> Result<(custom_codes::DbOps, SecretString), SGError> {
         let auth_db = sg_simple_auth();
         let db = sled::Db::open(auth_db)?;
 
@@ -183,7 +184,7 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
 
         let dbop = db.insert(key, value)?;
 
-        let bearer_key = SGSecret(self.user.0.clone() + ":::" + &self.random_key);
+        let bearer_key = SecretString::new(self.user.expose_secret().clone() + ":::" + &self.random_key.expose_secret());
 
         if let Some(_) = dbop {
             Ok((custom_codes::DbOps::Modified, bearer_key))
@@ -195,20 +196,20 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         /// #### Example
         /// ```no_run
         /// use schemeguardian::secrets::SimpleAuthStorage;
-        /// use schemeguardian::SGSecret;
+        /// use schemeguardian::SecretString;
         /// use serde_derive::{Serialize, Deserialize};
         /// #[derive(Debug, Serialize, Deserialize)]
         /// enum Custom {
         ///     ExecutiveBoard,
         /// }
         /// SimpleAuthStorage::<Custom>::new()
-        ///     .get(SGSecret("foo".to_owned()));
+        ///     .get(SecretString::new("Foo".to_owned()));
         /// ```
-    pub fn get(self, redactable_key: SGSecret) -> Result<(custom_codes::DbOps, Option<Payload<R>>), SGError> {
+    pub fn get(self, redactable_key: SecretString) -> Result<(custom_codes::DbOps, Option<Payload<R>>), SGError> {
         let auth_db = sg_simple_auth();
         let db = sled::Db::open(auth_db)?;
 
-        let raw_key = &redactable_key.0;
+        let raw_key = &redactable_key.expose_secret();
         let key_collection = raw_key.split(":::").collect::<Vec<&str>>();
         let key = bincode::serialize(key_collection[0])?;
 
@@ -226,20 +227,20 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         /// #### Example
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
-        /// use schemeguardian::SGSecret;  
+        /// use schemeguardian::SecretString;  
         /// use serde_derive::{Serialize, Deserialize};      
         /// #[derive(Debug, Serialize, Deserialize)]
         /// enum Custom {
         ///     ExecutiveBoard,
         /// }
         /// SimpleAuthStorage::<Custom>::new()
-        ///     .remove(SGSecret("foo".to_owned()));
+        ///     .remove(SecretString::new("Foo".to_owned()));
         /// ```
-    pub fn remove(self, redactable_key: SGSecret) -> Result<(custom_codes::DbOps, Option<Payload<R>>), SGError> {
+    pub fn remove(self, redactable_key: SecretString) -> Result<(custom_codes::DbOps, Option<Payload<R>>), SGError> {
         let auth_db = sg_simple_auth();
         let db = sled::Db::open(auth_db)?;
 
-        let raw_key = &redactable_key.0;
+        let raw_key = &redactable_key.expose_secret();
         let key_collection = raw_key.split(":::").collect::<Vec<&str>>();
         let key = bincode::serialize(key_collection[0])?;
 
@@ -256,14 +257,14 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         /// #### Example
         /// ```
         /// use schemeguardian::secrets::SimpleAuthStorage;
-        /// use schemeguardian::SGSecret;
+        /// use schemeguardian::SecretString;
         /// use serde_derive::{Serialize, Deserialize};
         /// #[derive(Debug, Serialize, Deserialize)]
         /// enum Custom {
         ///     ExecutiveBoard,
         /// }
         /// SimpleAuthStorage::<Custom>::new()
-        ///     .remove(SGSecret("foo".to_owned()));
+        ///     .remove(SecretString::new("Foo".to_owned()));
         /// ```
     pub fn list(self) -> Result<Vec<Payload<R>>, SGError> {
         let auth_db = sg_simple_auth();
@@ -294,20 +295,20 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
         /// #### Example
         /// ```should_panic
         /// use schemeguardian::secrets::SimpleAuthStorage;
-        /// use schemeguardian::SGSecret;
+        /// use schemeguardian::SecretString;
         /// use serde_derive::{Serialize, Deserialize};
         /// #[derive(Debug, Serialize, Deserialize)]
         /// enum Custom {
         ///     ExecutiveBoard,
         /// }
         /// SimpleAuthStorage::<Custom>::new()
-        ///     .authenticate(SGSecret("foo".to_owned()));
+        ///     .authenticate(SecretString::new("Foo".to_owned()));
         /// ```
-    pub fn authenticate(self, redactable_key: SGSecret) -> Result<(custom_codes::AccessStatus, Option<Payload<R>>), SGError> {
+    pub fn authenticate(self, redactable_key: SecretString) -> Result<(custom_codes::AccessStatus, Option<Payload<R>>), SGError> {
         let auth_db = sg_simple_auth();
         let db = sled::Db::open(auth_db)?;
 
-        let raw_key = &redactable_key.0;
+        let raw_key = &redactable_key.expose_secret();
         let key_collection = raw_key.split(":::").collect::<Vec<&str>>();
         let key = bincode::serialize(key_collection[0])?;
         let user_random_key = key_collection[1];
@@ -321,7 +322,7 @@ impl<R> SimpleAuthStorage<R> where R: serde::Serialize + serde::de::DeserializeO
                     if chrono::Utc::now() > datetime {
                         Ok((custom_codes::AccessStatus::Expired, None))
                     }else {
-                        if &payload.random_key.0 == user_random_key {
+                        if payload.random_key.expose_secret() == user_random_key {
                             Ok((custom_codes::AccessStatus::Granted, Some((payload.user, payload.role, payload.target, payload.lease, payload.random_key))))
                         }else {
                             Ok((custom_codes::AccessStatus::RejectedRAC, None))
@@ -360,4 +361,4 @@ fn sg_simple_auth() -> &'static str {
     ///     (Default::default(), Role::Unspecified, Default::default(), Default::default(), Default::default())
     /// }
     /// ```
-pub type Payload<R> = (SGSecret, Role<R>, Option<SGSecret>, Lease, SGSecret);
+pub type Payload<R> = (SecretString, Role<R>, Option<SecretString>, Lease, SecretString);
