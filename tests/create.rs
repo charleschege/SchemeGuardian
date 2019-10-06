@@ -1,6 +1,6 @@
 use serde_derive::{Serialize, Deserialize};
 use schemeguardian::{SGError, Lease, Role};
-use secrecy::SecretString;
+use redactedsecret::SecretString;
 use schemeguardian::secrets::SimpleAuthStorage;
 
 #[derive(Debug, Serialize, Deserialize)]

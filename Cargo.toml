@@ -42,7 +42,7 @@ toml = "0.5.1"
 #evmap = "4.2.2"
 
 #SECURE MEMORY
-redactedsecret = { git = "https://github.com/charleschege/RedactedSecret.git", features=["serde"] }
+redactedsecret = { version="0.4.0", features=["serde"] }
 #untrusted = "0.6.2"
 #zeroize = { version = "1.0.0-pre", features =["zeroize_derive"] }
 
@@ -51,6 +51,8 @@ chrono = { version = "0.4.7", features = ["serde"] }
 
 #KV STORE
 sled = "0.27.0"
+
+
 #uhttp_sse = "0.5.1"
 
 # GLOBAL ALLOCATOR
