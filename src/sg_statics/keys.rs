@@ -1,4 +1,4 @@
-use secrecy::SecretString;
+use redactedsecret::SecretString;
 use serde_derive::Deserialize;
 use std::fs;
 

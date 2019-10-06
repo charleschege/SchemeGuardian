@@ -1,5 +1,5 @@
 use serde_derive::{Serialize, Deserialize};
-use secrecy::{SecretString, ExposeSecret};
+use redactedsecret::{SecretString, ExposeSecret};
 use crate::{Lease, SGError, Role};
 
     /// ## Struct for simple storage

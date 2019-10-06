@@ -1,5 +1,5 @@
 use std::iter;
-use secrecy::SecretString;
+use redactedsecret::SecretString;
 use rand::distributions::Alphanumeric;
 use rand::{Rng, thread_rng};
 

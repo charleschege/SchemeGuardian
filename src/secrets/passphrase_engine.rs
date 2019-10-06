@@ -1,5 +1,5 @@
 use serde_derive::{Serialize, Deserialize};
-use secrecy::{SecretString, DebugSecret, ExposeSecret};
+use redactedsecret::{SecretString, DebugSecret, ExposeSecret};
 use argon2::{self, ThreadMode, Variant, Version};
 use crate::SG_SECRET_KEYS;
 use crate::secrets::random64alpha;

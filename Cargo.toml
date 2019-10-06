@@ -42,7 +42,7 @@ toml = "0.5.1"
 #evmap = "4.2.2"
 
 #SECURE MEMORY
-secrecy = { version = "0.4.0", path = "../../lib/secrecy", features=["serde"] }
+redactedsecret = { git = "https://github.com/charleschege/RedactedSecret.git", features=["serde"] }
 #untrusted = "0.6.2"
 #zeroize = { version = "1.0.0-pre", features =["zeroize_derive"] }
 

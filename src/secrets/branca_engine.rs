@@ -3,7 +3,7 @@ use rand::{Rng, thread_rng};
 use branca::Branca;
 use std::iter;
 use std::convert::TryInto;
-use secrecy::{ExposeSecret, SecretString};
+use redactedsecret::{ExposeSecret, SecretString};
 
 use crate::SG_SECRET_KEYS;
 use crate::SGError;

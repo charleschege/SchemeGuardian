@@ -1,7 +1,7 @@
 use serde_derive::{Serialize, Deserialize};
 use chrono::prelude::*;
 use sled::Db;
-use secrecy::{SecretString, ExposeSecret};
+use redactedsecret::{SecretString, ExposeSecret};
 
 use crate::{Role, Target, secrets, SGError};
 

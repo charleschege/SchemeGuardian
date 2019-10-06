@@ -1,5 +1,5 @@
 use serde_derive::{Serialize, Deserialize};
-use secrecy::SecretString;
+use redactedsecret::SecretString;
 use chrono::{DateTime, Utc};
 
     /// ### A an expiry date to lease a secret
