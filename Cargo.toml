@@ -24,8 +24,7 @@ either = "1.5.3"
 
 #ENCRYPTION AND AUTHENTICATION CRNG
 branca = "0.9.0"
-rand = { version = "0.7", default-features = false }
-rusty_ulid = "0.9.0"
+rand = "0.7"
 rust-argon2 = "0.5.0"
 
 #ASYNC
