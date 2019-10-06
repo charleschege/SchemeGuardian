@@ -1,34 +1,18 @@
 use serde_derive::{Serialize, Deserialize};
-use schemeguardian::{SGError, Lease, Role};
+use schemeguardian::{SGError, Role};
 use secrecy::{SecretString, ExposeSecret};
 use schemeguardian::secrets::SimpleAuthStorage;
 
-fn main() -> Result<(), SGError>{   
+#[derive(Debug, Serialize, Deserialize)]
+enum CustomUser {
+    InstitutionAdmin,
+    InstitutionSubAdmin,
+    Lecturer,
+    Accounts,
+}
 
-    /*if let Some(data) = SimpleAuthStorage::<CustomUser>::new()
-        .get(SecretString::new("x43".to_owned()))?.1{
-            println!("{:?}", data);
-    };*/
-
-    /*println!("{:?}", {
-        let data = SimpleAuthStorage::<CustomUser>::new()
-            .user(SecretString::new("x43".to_owned()))
-            .role(Role::CustomRole(CustomUser::InstitutionAdmin))
-            .target(Some(SecretString::new("ICT".to_owned())))
-            .lease(Lease::DateExpiry(chrono::Utc::now() + chrono::Duration::days(7)))
-            .build()
-            .insert()?.1;
-        let f = data.expose_secret().clone(); f
-    });*/
-
-    #[derive(Debug, Serialize, Deserialize)]
-    enum CustomUser {
-        InstitutionAdmin,
-        InstitutionSubAdmin,
-        Lecturer,
-        Accounts,
-    }
-
+#[test]
+fn fetch() -> Result<(), SGError> {
     
     let data = SimpleAuthStorage::<CustomUser>::new()
         .authenticate(SecretString::new("x43:::vs9mdrzyf037jzjwxlhyfoekobgfioydahw65vvhfcmzktqwbxsafl1d22n0frlb".to_owned()))?;
