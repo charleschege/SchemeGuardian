@@ -1,4 +1,4 @@
-use serde_derive::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize};
 use redactedsecret::{SecretString, DebugSecret, ExposeSecret};
 use argon2::{self, ThreadMode, Variant, Version};
 use crate::SG_SECRET_KEYS;
@@ -11,12 +11,12 @@ pub struct Passphrase(SecretString);
 
 impl DebugSecret for Passphrase {
     fn debug_secret() -> &'static str {
-        "S3CR3T::REDACTED"
+        "PASSPHRAS3::R3DACT3D"
     }
 }
 
 impl Default for Passphrase {
-    fn default() -> Self{ Self(SecretString::new("R3DACT3D::<Default>::S3CR3T".to_owned())) }
+    fn default() -> Self{ Self(SecretString::new("R3DACT3D::<Default>::PASSPHRAS3".to_owned())) }
 }
 
 impl Passphrase {

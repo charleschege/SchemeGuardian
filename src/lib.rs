@@ -4,32 +4,41 @@
 
 //! # SchemeGuardian
 //! Secrets Authrorization, Authentication, Verification and Encryption Manager with Key-Value Storage
-//! 
+//!
 
 use lazy_static::*;
+use redactedsecret::SecretString;
 
-pub use global::{Role, Target};
-    /// Contains global types and methods
+/// Re-export as public accessible APIs from crate
+pub use auth_state::{AuthState, TempLock};
+pub use global::{GenericPayload, GenericRole, ImmutableRole, Lease, Payload, Target};
+mod auth_state;
+/// Contains global types and methods
 pub mod global;
-pub use secrets::{secrets_engine, passphrase_engine, csprng, branca_engine, Lease, auth_storage};
-    /// secrets module
-pub mod secrets;
-
-    /// Module containing constants that live for the entirety of the program
+/// secrets module
+pub use secrets::{AuthEngine, DestructureToken, GenericAuthEngine};
+mod secrets;
+/// Storage types and methods for secrets
+pub use storage::SecretStorage;
+/// Module that generates a random alphanumeric lowercase 64bit phrase
+mod csprng;
+/// Module containing constants that live for the entirety of the program
 pub mod sg_statics;
+mod storage;
+pub use csprng::random64alpha;
+mod branca_engine;
+pub use branca_engine::{branca_decode, branca_encode, branca_random};
 
 pub use errors::SGError;
-    /// Module containing error handling using failure for the Rust `?` type
+/// Module containing error handling using failure for the Rust `?` type
 pub mod errors;
-    
 
 #[macro_export]
 lazy_static! {
         /// Create a static for branca token generation secret key for branca tokens
-   pub static ref SG_SECRET_KEYS: sg_statics::SgTomlSecrets = {
-       sg_statics::SGConfig::new().secrets()
+   static ref SG_SECRET_KEYS: SecretString = {
+       sg_statics::SGConfig::new().branca_key()
    };
 }
 
-    // Secrets engine handles Authenticate/Authorize, Create, Read, Update and Delete (ACRUD) for all secrets
-    
+// Secrets engine handles Deny, Authenticate, Authorize, Reject, Revoke (DAARR) for all secrets
