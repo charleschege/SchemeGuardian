@@ -26,7 +26,7 @@ pub fn branca_encode(value: SecretString) -> Result<SecretString, SGError> {
     let key = &SG_SECRET_KEYS;
     let token = Branca::new(key.expose_secret().as_bytes())?;
 
-    Ok(SecretString::new(token.encode(&value)?))
+    Ok(SecretString::new(token.encode(&value.expose_secret())?))
 }
 
 /// !DONE [TODO: use chrono duration to give a custom ttl]
@@ -36,5 +36,5 @@ pub fn branca_decode(value: SecretString) -> Result<SecretString, SGError> {
     let key = &SG_SECRET_KEYS;
     let token = Branca::new(key.expose_secret().as_bytes())?;
 
-    Ok(SecretString::new(token.decode(&value, 0)?))
+    Ok(SecretString::new(token.decode(&value.expose_secret(), 0)?))
 }

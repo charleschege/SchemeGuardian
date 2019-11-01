@@ -6,8 +6,14 @@ edition = "2018"
 description = "Secrets Authentication, Encryption and Verification Engine with Key-Value Store"
 homepage = "https://github.com/charleschege/SchemeGuardian"
 repository = "https://github.com/charleschege/SchemeGuardian"
-
 license = "Apache-2.0"
+keywords = ["secrecy", "encryption", "data-protection", "autonomous-secrets-manager", "data-manager", "privacy", "embedded", "embedded-security"]
+categories = ["cryptography", "authentication", "embedded", "web-programming"]
+readme = "README.md"
+
+[badges]
+maintenance = { status = "actively-developed" }
+
 
 [dependencies]
 

@@ -33,16 +33,14 @@ impl SGConfig {
     /// Extract default encryption key from `SchemeGuardian.toml` file
     pub fn default(mut self) -> SecretString {
         let fs = fs::read_to_string("SchemeGuardian.toml").unwrap();
-        let data: SGConfig = toml::from_str(&fs).unwrap();
-        self = data;
+        self = toml::from_str(&fs).unwrap();
 
         self.secrets.default
     }
     /// Extract branca encryption key from `SchemeGuardian.toml` file
     pub fn branca_key(mut self) -> SecretString {
         let fs = fs::read_to_string("SchemeGuardian.toml").unwrap();
-        let data: SGConfig = toml::from_str(&fs).unwrap();
-        self = data;
+        self = toml::from_str(&fs).unwrap();
 
         self.secrets.branca
     }
