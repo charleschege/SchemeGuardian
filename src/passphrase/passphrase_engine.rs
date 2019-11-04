@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use redactedsecret::{SecretString, DebugSecret, ExposeSecret};
 use argon2::{self, ThreadMode, Variant, Version};
 use crate::SG_SECRET_KEYS;
-use crate::secrets::random64alpha;
+use crate::random64alpha;
 use crate::SGError;
 
     /// Passphrase Engine handles generation and authentication of passphrases
@@ -47,7 +47,7 @@ impl Passphrase {
         if self.0.expose_secret().len() == 0 {
             return Err(SGError::PassphraseEmpty);
         }else if self.0.expose_secret().len() / 1024 <= 1 {
-            match argon2::verify_encoded_ext(&hashed.expose_secret(), &bincode::serialize(&self.0)?, &SG_SECRET_KEYS.default.expose_secret().as_bytes(), &[])? {
+            match argon2::verify_encoded_ext(&hashed.expose_secret(), &bincode::serialize(&self.0)?, &SG_SECRET_KEYS.expose_secret().as_bytes(), &[])? {
                 true => Ok(custom_codes::AccessStatus::Granted),
                 false => Ok(custom_codes::AccessStatus::Denied),
             }
@@ -68,7 +68,7 @@ fn argon2_config() -> argon2::Config<'static> {
         time_cost: 3,
         lanes: 4,
         thread_mode: ThreadMode::Parallel,
-        secret: &SG_SECRET_KEYS.default.expose_secret().as_bytes(),
+        secret: &SG_SECRET_KEYS.expose_secret().as_bytes(),
         ad: &[],
         hash_length: 32,
     }

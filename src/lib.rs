@@ -28,6 +28,9 @@ mod storage;
 pub use csprng::random64alpha;
 mod branca_engine;
 pub use branca_engine::{branca_decode, branca_encode, branca_random};
+mod passphrase;
+/// Passphrase, PIN or password authentication module re-export
+pub use passphrase::Passphrase;
 
 pub use errors::SGError;
 /// Module containing error handling using failure for the Rust `?` type
