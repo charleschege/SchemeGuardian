@@ -361,7 +361,7 @@ impl AuthEngine {
 ///     .lease(Lease::DateExpiryTAI(TAI64N::from_system_time(&(SystemTime::now() + Duration::from_secs(2)))))
 ///     .build();
 /// ```
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct GenericAuthEngine<R> {
     identifier: SecretString,
     role: GenericRole<R>,
@@ -383,7 +383,7 @@ pub struct GenericAuthEngine<R> {
 /// ```
 impl<R> GenericAuthEngine<R>
 where
-    R: serde::Serialize + serde::de::DeserializeOwned + std::cmp::PartialEq,
+    R: serde::Serialize + serde::de::DeserializeOwned + std::cmp::PartialEq + std::fmt::Debug,
 {
     /// ### Initialize a new GenericAuthEngine
     /// #### Example
@@ -456,10 +456,10 @@ where
     ///     ExecutiveBoard,
     /// }
     /// GenericAuthEngine::<Custom>::new()
-    ///     .target(SecretString::new("Foo".to_owned()));
+    ///     .target(Some(SecretString::new("Foo".to_owned())));
     /// ```
-    pub fn target(mut self, value: SecretString) -> Self {
-        self.target = Some(value);
+    pub fn target(mut self, value: Option<SecretString>) -> Self {
+        self.target = value;
 
         self
     }
@@ -532,12 +532,8 @@ where
     ///     .rac();
     /// ```
     pub fn rac(self) -> Result<SecretString, SGError> {
-        Ok(bincode::deserialize::<GenericAuthEngine<R>>(
-            &crate::SecretStorage::new()
-                .get(&SecretString::new("REDACTED".to_owned()))?
-                .1,
-        )?
-        .random_key)
+
+        Ok(self.random_key)
     }
     /// ### Shows value for GenericRole<R>
     /// #### Example

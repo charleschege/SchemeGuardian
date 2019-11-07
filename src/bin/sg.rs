@@ -25,7 +25,7 @@ fn main() -> Result<(), SGError> {
             .identifier(SecretString::new("REDACTED".to_owned()))
             .show_random()?.expose_secret()
     );*/
-
+    /*
     dbg!(DestructureToken::new()
         .token(SecretString::new(
             "REDACTED:::c9qt2gy4ul3hgho0k1uvo7hv3sxh3wrzz5xszbpak7sfnuoapg5dghq2glvmyfld"
@@ -37,25 +37,27 @@ fn main() -> Result<(), SGError> {
     dbg!(schemeguardian::branca_decode(SecretString::new(
         "MvfUt0V4v0YYEOCnNBlahqPq699z6D5cPYYLgfqqVPJT1urdrGr4WmvwCoEXOYjvsM".to_owned()
     ))?
-    .expose_secret());
+    .expose_secret());*/
 
-
-use schemeguardian::{GenericAuthEngine, GenericRole, Lease};
-use std::time::{SystemTime, Duration};
-use tai64::{TAI64N};
-use serde::{Serialize, Deserialize};
-///
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-enum Custom {
-    ExecutiveBoard,
-}
-
-    GenericAuthEngine::<Custom>::new()
+    use schemeguardian::{GenericAuthEngine, GenericRole, Lease};
+    use serde::{Deserialize, Serialize};
+    use std::time::{Duration, SystemTime};
+    use tai64::TAI64N;
+    ///
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    enum Custom {
+        ExecutiveBoard,
+    }
+    
+    dbg!(GenericAuthEngine::<Custom>::new()
         .identifier(SecretString::new("Foo".to_owned()))
         .role(GenericRole::CustomRole(Custom::ExecutiveBoard))
-        .target(SecretString::new("IT-Diploma".to_owned()))
-        .lease(Lease::DateExpiryTAI(TAI64N::from_system_time(&(SystemTime::now() + Duration::from_secs(2)))))
-        .build();
+        .target(Some(SecretString::new("IT-Diploma".to_owned())))
+        .lease(Lease::DateExpiryTAI(TAI64N::from_system_time(
+            &(SystemTime::now() + Duration::from_secs(2)),
+        )))
+        .build()
+        .rac()?.expose_secret());
 
     Ok(())
 }
