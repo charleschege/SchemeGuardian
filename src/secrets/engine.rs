@@ -226,6 +226,22 @@ impl AuthEngine {
         self.random_key = SecretString::new(crate::random64alpha().expose_secret().to_owned());
 
         self
+    }    
+    /// ### Generates a key that can be encoded as a branca token or cookie seperated by `:::` as `username:::rac`
+    /// #### Example
+    /// ```
+    /// use schemeguardian::GenericAuthEngine;
+    /// use serde::{Serialize, Deserialize};
+    /// #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+    /// enum Custom {
+    ///     ExecutiveBoard,
+    /// }
+    /// GenericAuthEngine::<Custom>::new()
+    ///     .encodable();
+    /// ```
+    pub fn encodable(&self) -> SecretString {
+
+        SecretString::new(self.identifier.expose_secret().to_owned() + ":::" + self.random_key.expose_secret())
     }
     /// ### Inserts the secrets into the Key-Value Store
     /// #### Example
@@ -356,7 +372,6 @@ impl AuthEngine {
 ///
 /// GenericAuthEngine::<Custom>::new()
 ///     .identifier(SecretString::new("Foo".to_owned()))
-///     .role(GenericRole::CustomRole(Custom::ExecutiveBoard))
 ///     .target(Some(SecretString::new("IT-Diploma".to_owned())))
 ///     .lease(Lease::DateExpiryTAI(TAI64N::from_system_time(&(SystemTime::now() + Duration::from_secs(2)))))
 ///     .build();
@@ -422,25 +437,6 @@ where
     /// ```
     pub fn identifier(mut self, user: SecretString) -> Self {
         self.identifier = user;
-
-        self
-    }
-    /// ### Add a Role
-    /// #### Example
-    /// ```
-    /// use schemeguardian::{GenericAuthEngine, GenericRole};
-    /// use serde::{Serialize, Deserialize};
-    ///
-    /// #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
-    /// enum Custom {
-    ///     ExecutiveBoard,
-    /// }
-    ///
-    /// GenericAuthEngine::<Custom>::new()
-    ///     .role(GenericRole::CustomRole(Custom::ExecutiveBoard));
-    /// ```
-    pub fn role(mut self, value: GenericRole<R>) -> Self {
-        self.role = value;
 
         self
     }
@@ -626,8 +622,6 @@ where
                     Ok((AccessStatus::Expired, Default::default()))
                 } else if data.random_key != user_random {
                     Ok((AccessStatus::RejectedRAC, Default::default()))
-                } else if self.role != data.role {
-                    Ok((AccessStatus::Denied, Default::default()))
                 } else {
                     Ok((
                         AccessStatus::Granted,

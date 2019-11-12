@@ -22,7 +22,7 @@ serde = { version = "1.0.101", features = ["derive"] }
 bincode = "1.1.4"
 
 #RESPONSES AND ERROR HANDLING
-custom_codes = "1.2.0"
+custom_codes = { path = "../custom_codes" } #"1.2.2"
 failure = "0.1.5"
 lazy_static = "1.3.0"
 either = "1.5.3"
