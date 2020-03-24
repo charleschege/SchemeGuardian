@@ -15,7 +15,7 @@
    version="1.1"
    id="svg8"
    inkscape:version="0.92.3 (2405546, 2018-03-11)"
-   sodipodi:docname="inkscape-template-FULL-HD.svg">
+   sodipodi:docname="Branding.svg">
   <defs
      id="defs2">
     <filter
@@ -147,18 +147,18 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.12374369"
-     inkscape:cx="283.81613"
-     inkscape:cy="-571.10359"
+     inkscape:zoom="1.4"
+     inkscape:cx="372.32958"
+     inkscape:cy="265.77306"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      units="px"
      inkscape:pagecheckerboard="true"
-     inkscape:window-width="1366"
-     inkscape:window-height="738"
-     inkscape:window-x="0"
-     inkscape:window-y="312"
+     inkscape:window-width="1920"
+     inkscape:window-height="1050"
+     inkscape:window-x="1366"
+     inkscape:window-y="0"
      inkscape:window-maximized="1"
      fit-margin-top="0"
      fit-margin-left="0"
@@ -172,7 +172,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -184,8 +184,8 @@
     <g
        id="g21504"
        transform="matrix(53.447001,0,0,53.447001,-3487.824,-3786.9863)"
-       inkscape:export-xdpi="4310.5708"
-       inkscape:export-ydpi="4310.5708">
+       inkscape:export-xdpi="457.62344"
+       inkscape:export-ydpi="457.62344">
       <rect
          y="71.87603"
          x="67.242126"
@@ -230,7 +230,7 @@
                    y="133.05299"
                    rx="0.82401031"
                    ry="0.82401031"
-                   style="paint-order:fill markers stroke" />
+                   style="paint-order:fill markers stroke;fill:#c59b6b;fill-opacity:1" />
                 <rect
                    id="rect7313"
                    ry="0.82401031"
@@ -239,7 +239,7 @@
                    x="294.841"
                    height="3.402"
                    width="3.402"
-                   style="paint-order:fill markers stroke" />
+                   style="paint-order:fill markers stroke;fill:#c59b6b;fill-opacity:1" />
                 <rect
                    id="rect7315"
                    width="3.402"
@@ -248,7 +248,7 @@
                    y="133.05299"
                    rx="0.82401031"
                    ry="0.82401031"
-                   style="paint-order:fill markers stroke" />
+                   style="paint-order:fill markers stroke;fill:#c59b6b;fill-opacity:1" />
               </g>
               <g
                  id="g7325"
@@ -261,7 +261,7 @@
                    x="290.09698"
                    height="3.402"
                    width="3.402"
-                   style="paint-order:fill markers stroke" />
+                   style="paint-order:fill markers stroke;fill:#c59b6b;fill-opacity:1" />
                 <rect
                    id="rect7321"
                    width="3.402"
@@ -270,7 +270,7 @@
                    y="133.05299"
                    rx="0.82401031"
                    ry="0.82401031"
-                   style="paint-order:fill markers stroke" />
+                   style="paint-order:fill markers stroke;fill:#c59b6b;fill-opacity:1" />
                 <rect
                    id="rect7323"
                    ry="0.82401031"
@@ -279,7 +279,7 @@
                    x="299.58499"
                    height="3.402"
                    width="3.402"
-                   style="paint-order:fill markers stroke" />
+                   style="paint-order:fill markers stroke;fill:#c59b6b;fill-opacity:1" />
               </g>
               <g
                  id="g7333"
@@ -292,7 +292,7 @@
                    y="133.05299"
                    rx="0.82401031"
                    ry="0.82401031"
-                   style="paint-order:fill markers stroke" />
+                   style="paint-order:fill markers stroke;fill:#c59b6b;fill-opacity:1" />
                 <rect
                    id="rect7329"
                    ry="0.82401031"
@@ -301,7 +301,7 @@
                    x="294.841"
                    height="3.402"
                    width="3.402"
-                   style="paint-order:fill markers stroke" />
+                   style="paint-order:fill markers stroke;fill:#c59b6b;fill-opacity:1" />
                 <rect
                    id="rect7331"
                    width="3.402"
@@ -310,7 +310,7 @@
                    y="133.05299"
                    rx="0.82401031"
                    ry="0.82401031"
-                   style="paint-order:fill markers stroke" />
+                   style="paint-order:fill markers stroke;fill:#c59b6b;fill-opacity:1" />
               </g>
               <rect
                  id="rect7335"
@@ -320,7 +320,7 @@
                  x="294.841"
                  height="3.402"
                  width="3.402"
-                 style="paint-order:fill markers stroke" />
+                 style="paint-order:fill markers stroke;fill:#c59b6b;fill-opacity:1" />
             </g>
             <g
                id="g21048"

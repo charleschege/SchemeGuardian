@@ -1,7 +1,10 @@
-use redactedsecret::SecretString;
-use serde::{Deserialize, Serialize};
-use std::time::{Duration, SystemTime};
+use serde::{Serialize, Deserialize};
+use zeroize::Zeroize;
 use tai64::TAI64N;
+
+pub (crate) static SCHEMEGUARDIAN_TOML_FILE: &'static str = "./SchemeGuardian/SchemeGuardian.toml";
+pub (crate) static SCHEMEGUARDIAN_LOG_FILE: &'static str = "./SchemeGuardian/SchemeGuardian.log";
+pub (crate) static DEFAULT_KV_STORE_PATH: &'static str = "./SchemeGuardian/SchemeGuardianSecrets/secrets_kv_db";
 
 /// ### A an expiry date to lease a secret
 /// #### Example
@@ -10,117 +13,90 @@ use tai64::TAI64N;
 /// let foo = Lease::Lifetime;
 /// assert_eq!(foo, Lease::Lifetime);
 /// ```
-#[derive(Debug, Serialize, Deserialize, PartialEq, PartialOrd, Clone, Eq)]
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Clone, Eq, Zeroize, Debug)]
 pub enum Lease {
-    /// Has an expiry date of DateTime<Utc>
+    /// Has an expiry TAI time TAI64N type which doesnt care about leap seconds
     DateExpiryTAI(TAI64N),
-    /// This is a lease to a secret that will never expire
+    /// This is a lease to a secret that will never expire. This is field not recommended
     Lifetime,
+    /// First time the scheme is accessed
+    FirstAccess,
     /// This is a lease to a secret that will expire after the download is completed
     OnDownload,
+    /// This is a lease to a secret that will expire after the specified number of downloads is completed
+    OnDownloads(u64),
     /// This is a lease to a secret that will expire after the upload is completed
     OnUpload,
+    /// This is a lease to a secret that will expire after the specified number of uploads are completed
+    OnUploads(u64),
     /// This is a lease to a secret that will expire after the network is disconnected
     OnDisconnection,
     /// The lease time has not been specified by the user
-    UnSpecified,
+    Unspecified,
 }
 
 impl Default for Lease {
     fn default() -> Self {
-        Lease::DateExpiryTAI(TAI64N::from_system_time(
-            &(SystemTime::now() + Duration::from_secs(timelite::LiteDuration::hours(24))),
-        ))
+        Lease::DateExpiryTAI(TAI64N::now() + std::time::Duration::from_secs(timelite::LiteDuration::hours(24)))
     }
 }
-/// `Role` of the user
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub enum GenericRole<R> {
-    /// The user with all access rights
+
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Clone, Eq, Zeroize, Debug)]
+pub enum Role {
     SuperUser,
-    /// A user with administrative rights
     Admin,
-    /// A user with some administrative rights
     SubAdmin,
-    /// A normal user
     User,
-    /// A custom role for the user
-    CustomRole(R),
-    /// Role is not specified hence the user has no rights
+    Specifed(String),
     Unspecified,
 }
 
-impl<R> Default for GenericRole<R> {
-    fn default() -> Self {
-        GenericRole::Unspecified
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Clone, Eq, Zeroize)]
+pub struct DatabaseAccess {
+    name: String,
+    document: Option<String>,
+    field: Option<String>,
+}
+
+type Blake3Hash = String;
+
+/// Scheme Control List //TODO
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Clone, Eq, Zeroize)]
+pub enum SchemeControlList {
+    Network(String),
+    File(String),
+    Database(DatabaseAccess),
+    Custom(Vec<u8>),
+    TlsCertificate(String),
+    Hash(Blake3Hash),
+}
+
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Clone, Eq, Zeroize, Debug)]
+pub enum AccessControlList {
+    Create,
+    Read,
+    Write,
+    Execute,
+    NoAccess,
+}
+
+#[derive(Serialize, Deserialize, Zeroize, Clone)]
+pub (crate) struct TaiTimeStamp(TAI64N); // TODO see how to make the TAI64 Standalone
+
+impl TaiTimeStamp {
+    pub fn now() -> Self {
+        Self(TAI64N::now())
     }
 }
 
-/// A fixed set of unchangable roles
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub enum ImmutableRole {
-    /// The user with all access rights
-    SuperUser,
-    /// A user with administrative rights
-    Admin,
-    /// A user with some administrative rights
-    SubAdmin,
-    /// A normal user
-    User,
-    /// Role is not specified hence the user has no rights
-    Unspecified,
-}
+impl secrecy::DebugSecret for Lease {}
+impl secrecy::DebugSecret for Role {}
+impl secrecy::DebugSecret for AccessControlList {}
+impl secrecy::DebugSecret for SchemeControlList {}
+impl secrecy::DebugSecret for TaiTimeStamp {}
 
-impl Default for ImmutableRole {
-    fn default() -> Self {
-        ImmutableRole::Unspecified
-    }
-}
-
-/// `Target` is the resource being requested or route being accessed
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub enum Target {
-    /// `Guardian` Target for accounts that have a cloud manager and a user
-    Guardian,
-    /// `Global` Target has access to administration and user routes or permissions
-    Global,
-    /// A custom role for the user
-    CustomTarget(SecretString),
-    /// An unspefified target
-    Unspecified,
-}
-
-impl Default for Target {
-    fn default() -> Self {
-        Self::Unspecified
-    }
-}
-/// A return value to an of the operation. It contains the payload of the AuthPayload
-///
-/// `(user, role)`
-/// ## Example
-/// ```no_run
-/// use schemeguardian::Payload;
-/// use schemeguardian::ImmutableRole;
-/// enum MyUserEnum {Foo, Bar}
-/// fn fetch_from_db() -> Payload {
-///     // some code here
-///     (Default::default(), ImmutableRole::Unspecified)
-/// }
-/// ```
-pub type Payload = (SecretString, ImmutableRole);
-
-/// A return value to an of the operation. It contains the payload of the AuthPayload
-///
-/// `(user, role, target)`
-/// ## Example
-/// ```no_run
-/// use schemeguardian::GenericPayload;
-/// use schemeguardian::GenericRole;
-/// enum MyUserEnum {Foo, Bar}
-/// fn fetch_from_db<R>() -> GenericPayload<R> {
-///     // some code here
-///     (Default::default(), GenericRole::Unspecified, Default::default())
-/// }
-/// ```
-pub type GenericPayload<R> = (SecretString, GenericRole<R>, Option<SecretString>);
+impl secrecy::CloneableSecret for Lease {}
+impl secrecy::CloneableSecret for Role {}
+impl secrecy::CloneableSecret for AccessControlList {}
+impl secrecy::CloneableSecret for SchemeControlList {}
+impl secrecy::CloneableSecret for TaiTimeStamp {}
