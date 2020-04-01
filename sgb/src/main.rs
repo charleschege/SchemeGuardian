@@ -7,7 +7,13 @@ use schemeguardian::{Role, TokenContents, TokenStorage, Lease};
 
 #[async_std::main]
 async fn main() -> Result<()> {
-    let config = schemeguardian::LoadConfiguration::load().await;
+    
+
+    Ok(())
+}
+
+/*
+let config = schemeguardian::LoadConfiguration::load().await;
     let storage = TokenStorage::init().await?;
 
     let default_key = match config.get("default_key") {
@@ -34,7 +40,7 @@ async fn main() -> Result<()> {
 
     dbg!(&contents);
 
-    /*match schemeguardian::Token::new().await
+    match schemeguardian::Token::new().await
         .key(aead_key_get.to_owned()).await
         .contents(contents).await
         .encrypt().await {
@@ -43,7 +49,7 @@ async fn main() -> Result<()> {
                 storage.set(inner.0, inner.1).await?;
             },
             Err(e) => { dbg!(e); }
-        }*/
+        }
 
     let cipher = "0Myor27f714sczWC1KF5JyGs5WBh_EXzhHN2AlCn1EDrBNhEGn6RbpqQPlBQY0yJp1gOeEW2Y6yV31ZHLjKLW4tcOMgE8i6GrFP4Q2T4hdOrPerKSoeh6WwIc2YXFofa1S7q";
 
@@ -65,6 +71,4 @@ async fn main() -> Result<()> {
             },
             Err(e) => { dbg!(e); }
         }*/
-
-    Ok(())
-}
+        */

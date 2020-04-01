@@ -6,7 +6,6 @@ use anyhow::Result;
 use async_std::{
     fs::OpenOptions,
     io::ErrorKind,
-    io::stderr,
     io::prelude::*,
 };
 use crate::{

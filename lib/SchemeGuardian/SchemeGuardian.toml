@@ -1,0 +1,7 @@
+[secrets]
+# Default 32byte (256 bit) key
+default = "sasa weather mkulima castle yule"
+# 32 byte (256 bit) key for argon2
+argon2 = "nani agusta yule cirrus todo now"
+# 32 byte (256 bit) key for XChaCha20Poly1305
+aead = "01234567890123456789012345678901"

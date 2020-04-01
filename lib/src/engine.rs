@@ -1,4 +1,4 @@
-use secrecy::{SecretString, Secret};
+use secrecy::{SecretString};
 use std::collections::HashMap;
 use crate::SchemeGuardianConfig;
 
