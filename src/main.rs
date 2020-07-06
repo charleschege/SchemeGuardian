@@ -22,13 +22,25 @@ pub use csprng::*;
 mod tokens;
 pub use tokens::*;
 mod engine;
-pub use engine::{LoadConfiguration};
+
 mod config;
 pub (crate) use config::*;
-mod errors;
-pub (crate) use errors::*;
-mod storage;
-pub use storage::TokenStorage;
 
 // Secrets engine handles Deny, Authenticate, Authorize, Reject, Revoke (DAARR) for all secrets
 // TODO Add jemalloc as the allocator
+
+fn main() {
+    use secrecy::{SecretString, Secret, ExposeSecret};
+    {
+        smol::run(async {
+            let mut foo = Blake3Token::new();
+            foo.username(SecretString::new("x43".to_owned()));
+            foo.role(Secret::new(Role::SuperUser));
+            foo.lease(Secret::new(Lease::default()));
+    
+            dbg!(foo.get_hash().await);
+
+            dbg!(Blake3Token::to_blake3(&SecretString::new("d2c31d5a7cc9dbb254a5a5e2c295845d1e113c640f8783116e4640cb3162c368".into())));
+        })
+    }
+}

@@ -1,5 +1,41 @@
-[workspace]
-members = [
-    "lib",
-    "sgb",
-]
+[package]
+name = "schemeguardian"
+version = "0.3.0-alpha.1"
+authors = ["Charles Chege <charleschege@protonmail.ch>"]
+edition = "2018"
+description = "Secrets Authentication, Encryption and Verification Engine with Key-Value Store"
+homepage = "https://github.com/charleschege/SchemeGuardian"
+repository = "https://github.com/charleschege/SchemeGuardian"
+license = "Apache-2.0"
+keywords = ["encryption", "data-protection", "autonomous-secrets", "privacy", "embedded-security"]
+categories = ["cryptography", "authentication", "embedded", "web-programming"]
+readme = "README.md"
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+
+[dependencies]
+blake3 = "0.3.4"
+serde = { version = "1.0.114", features = ["derive"] }
+bincode = "1.3.1"
+tai64 = { features = ["serde", "zeroize"], path = "../iqlusion/crates/tai64" }
+secrecy = { version = "0.6.0", features = ["serde"] }
+zeroize = { version = "1.1.0", features = ["zeroize_derive"] }
+custom_codes = "2.0.3"
+rand = "0.7.3"
+rust-argon2 = "0.8.2"
+toml = "0.5.6"
+smol = "0.1.18"
+anyhow = "1.0.31"
+#constant_time_eq = "0.1.5"
+#jemallocator = "0.3.2"
+#aead = "0.3.1"
+#data-encoding = "2.2.1"
+timelite = "1.0.4"
+turingdb = { path = "../TuringDB/TuringDB" }
+#blocking = "0.4.6"
+futures = "0.3.5"
+async-dup = "1.0.1"
+#hreq = { version = "", features = ["tls", "smol", "gzip"] }
+hex = "0.4.2"
