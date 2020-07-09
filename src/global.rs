@@ -2,7 +2,13 @@ use std::convert::TryInto;
 use zeroize::Zeroize;
 use tai64::TAI64N;
 
-pub (crate) const CONFIG_FILE: &'static str = "./SchemeGuardian/SchemeGuardianConf.toml";
+pub (crate) const CONFIG_FILE: &str = "./SchemeGuardian/SchemeGuardianConf.toml";
+pub (crate) const BLAKE3_STORAGE: &str = "./SchemeGuardian/TuringDB_Repo/TokenStorage/Blake3Token";
+pub (crate) const TOKEN_DB: &str = "TokenStorage";
+pub (crate) const BLAKE3_DOCUMENT: &str = "Blake3Token";
+pub (crate) const GC_REGISTRY: &str = "GcRegistry";
+pub (crate) const GC_STORAGE: &str = "GcStorage";
+pub (crate) type TimeStamp = TAI64N;
 
 /// ### A an expiry date to lease a secret
 /// #### Example
