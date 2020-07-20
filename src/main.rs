@@ -33,6 +33,9 @@ pub (crate) use config::*;
 mod storage;
 use storage::*;
 
+mod garbage_collector;
+pub use garbage_collector::*;
+
 // Secrets engine handles Deny, Authenticate, Authorize, Reject, Revoke (DAARR) for all secrets
 // TODO Add jemalloc as the allocator
 
