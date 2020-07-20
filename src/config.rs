@@ -3,8 +3,8 @@ use custom_codes::{SecOps, KeyLength};
 use secrecy::{SecretString, ExposeSecret};
 use anyhow::Result;
 use std::fs::OpenOptions;
-use futures::AsyncReadExt;
-use smol::{blocking, reader};
+use futures_lite::*;
+use blocking::unblock;
 
 use crate::CONFIG_FILE;
 
@@ -36,13 +36,13 @@ impl SchemeGuardianConfig {
     pub (crate) async fn init(&mut self) -> Result<&SchemeGuardianConfig> {
         let mut contents = String::new();
 
-        let file = blocking!(OpenOptions::new()
+        let file = unblock!(OpenOptions::new()
             .create(false)
             .write(false)
             .read(true)
             .open(CONFIG_FILE))?;
-        
-        let mut file = reader(file);
+
+        let mut file = blocking::Unblock::new(file);
 
         file.read_to_string(&mut contents).await?;
         
