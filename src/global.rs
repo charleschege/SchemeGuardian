@@ -3,7 +3,6 @@ use zeroize::Zeroize;
 use tai64::TAI64N;
 
 pub (crate) const CONFIG_FILE: &str = "./SchemeGuardian/SchemeGuardianConf.toml";
-pub (crate) const BLAKE3_STORAGE: &str = "./SchemeGuardian/TuringDB_Repo/TokenStorage/Blake3Token";
 pub (crate) const TOKEN_DB: &str = "TokenStorage";
 pub (crate) const BLAKE3_DOCUMENT: &str = "Blake3Token";
 pub (crate) const GC_REGISTRY: &str = "GcRegistry";
@@ -207,3 +206,9 @@ impl secrecy::CloneableSecret for Role {}
 impl secrecy::CloneableSecret for AccessControlList {}
 impl secrecy::CloneableSecret for SchemeControlList {}
 impl secrecy::CloneableSecret for TaiTimeStamp {}
+
+pub enum GcExec {
+    Hit,
+    Miss,
+    MalformedOperation,
+}
