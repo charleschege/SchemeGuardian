@@ -31,7 +31,7 @@ mod config;
 pub (crate) use config::*;
 
 mod storage;
-use storage::*;
+pub use storage::*;
 
 mod garbage_collector;
 pub use garbage_collector::*;

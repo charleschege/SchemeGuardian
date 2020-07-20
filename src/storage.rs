@@ -21,20 +21,9 @@ pub (crate) trait StorageOps {
 trait GarbageCollector {
     async fn gc(storage: Arc<&TuringEngine>, field_name: TimeStamp) -> Result<DbOps>;
 }
-pub (crate) struct SGStorage<'b3s> {
-    blake3_token: Blake3Storage<'b3s>,
-}
-
-impl<'b3s> SGStorage<'b3s> {
-    pub (crate) async fn init(storage: Arc<TuringEngine>) -> Result<DbOps> {
-        storage.repo_init().await?;
-
-        Ok(DbOps::RepoInitialized)
-    }
-}
 
 #[derive(Debug)]
-struct Blake3Storage<'b3s> {
+pub struct Blake3Storage<'b3s> {
     db: &'b3s Path,
     document: &'b3s Path,
 }
