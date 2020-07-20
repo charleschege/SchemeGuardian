@@ -25,15 +25,17 @@ custom_codes = { path = "../custom_codes" }
 rand = "0.7.3"
 rust-argon2 = "0.8.2"
 toml = "0.5.6"
-smol = "0.1.18"
 anyhow = "1.0.31"
 timelite = "1.0.4"
-futures = "0.3.5"
+futures-lite = "0.1.5"
 async-dup = "1.0.1"
 hex = "0.4.2"
 turingdb = { path = "../TuringDB/TuringDB" }
 async-lock = "1.1.4"
 async-trait = "0.1.36"
+multitask = "0.2.0"
+blocking = "0.4.6"
+async-io = "0.1.2"
 #queue-file2 = { path = "../queue-file2" }
 #hreq = { version = "", features = ["tls", "smol", "gzip"] }
 #blocking = "0.4.6"
