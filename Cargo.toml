@@ -15,27 +15,26 @@ readme = "README.md"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-blake3 = "0.3.4"
-serde = { version = "1.0.114", features = ["derive"] }
-bincode = "1.3.1"
+blake3 = "0.3.7"
+serde = { version = "1.0.118", features = ["derive"] }
 tai64 = { features = ["serde", "zeroize"], path = "../iqlusion/crates/tai64" }
-secrecy = { version = "0.6.0", features = ["serde"] }
-zeroize = { version = "1.1.0", features = ["zeroize_derive"] }
-custom_codes = { path = "../custom_codes" }
-rand = "0.7.3"
-rust-argon2 = "0.8.2"
-toml = "0.5.6"
-anyhow = "1.0.31"
+secrecy = { version = "0.7.0", features = ["serde"] }
+zeroize = { version = "1.2.0", features = ["zeroize_derive"] }
+custom_codes = "2.0.4"
+rust-argon2 = "0.8.3"
+toml = "0.5.7"
+anyhow = "1.0.35"
 timelite = "1.0.4"
-futures-lite = "0.1.5"
-async-dup = "1.0.1"
+futures-lite = "1.11.2"
+async-dup = "1.2.2"
 hex = "0.4.2"
-turingdb = { path = "../TuringDB/TuringDB" }
-async-lock = "1.1.4"
-async-trait = "0.1.36"
-multitask = "0.2.0"
-blocking = "0.4.6"
-async-io = "0.1.2"
+turingdb = "2.0.0"
+async-lock = "2.3.0"
+async-trait = "0.1.42"
+async-io = "1.3.1"
+async-fs = "1.5.0"
+nanorand = "0.5.1"
+bincode = "1.3.1"
 #queue-file2 = { path = "../queue-file2" }
 #hreq = { version = "", features = ["tls", "smol", "gzip"] }
 #blocking = "0.4.6"

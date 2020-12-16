@@ -1,10 +1,12 @@
 use std::convert::TryInto;
 use zeroize::Zeroize;
 use tai64::TAI64N;
+use serde::{Serialize, Deserialize};
+use anyhow::Result;
 
 pub (crate) const CONFIG_FILE: &str = "./SchemeGuardian/SchemeGuardianConf.toml";
-pub (crate) const TOKEN_DB: &str = "TokenStorage";
-pub (crate) const BLAKE3_DOCUMENT: &str = "Blake3Token";
+pub (crate) const TOKEN_DB_PATH: &str = "./SchemeGuardian/TuringDB_Repo/TokenStorage";
+pub (crate) const TOKEN_SESSION_DOCUMENT: &str = "./SchemeGuardian/TuringDB_Repo/TokenStorage/SessionStorage";
 pub (crate) const GC_REGISTRY: &str = "GcRegistry";
 pub (crate) const GC_STORAGE: &str = "GcStorage";
 pub (crate) type TimeStamp = TAI64N;
@@ -16,7 +18,7 @@ pub (crate) type TimeStamp = TAI64N;
 /// let foo = Lease::Lifetime;
 /// assert_eq!(foo, Lease::Lifetime);
 /// ```
-#[derive(PartialEq, PartialOrd, Clone, Eq, Zeroize, Debug)]
+#[derive(PartialEq, PartialOrd, Clone, Eq, Zeroize, Debug, Serialize, Deserialize)]
 pub (crate) enum Lease {
     /// This is a lease to a secret that will never expire. This is field not recommended
     Lifetime,
@@ -109,106 +111,80 @@ impl<'l> Lease {
     }
 }
 
-#[derive(PartialEq, PartialOrd, Clone, Eq, Zeroize, Debug)]
+#[derive(PartialEq, PartialOrd, Clone, Eq, Zeroize, Debug, Serialize, Deserialize)]
 pub enum Role {
     SuperUser,
     Admin,
     SubAdmin,
     User,
     Specifed(String),
-    NonExistent,
 }
 
-impl Role {
-    pub fn from_header(value: &Role) -> Vec<u8> {
-        match value {
-            &Role::SuperUser => vec![0x00],
-            &Role::Admin => vec![0x01],
-            &Role::SubAdmin => vec![0x02],
-            &Role::User => vec![0x03],
-            Role::Specifed(custom) => {
-                let mut data = Vec::new();
-                data.extend_from_slice(&[0x04]);
-                data.extend_from_slice(custom.as_bytes());
+#[derive(Zeroize, Clone, Serialize, Deserialize)]
+pub (crate) struct TaiTimestamp(TAI64N); // TODO see how to make the TAI64 Standalone
 
-                data
-            },
-            &Role::NonExistent => vec![0xf1],
-        }
-    }
-
-    pub fn to_header(value: &[u8]) -> Role {
-        match value {
-            &[0x00] => Role::SuperUser,
-            &[0x01] => Role::Admin,
-            &[0x02] => Role::SubAdmin,
-            &[0x03] => Role::User,
-            &[0x04] => {
-                match String::from_utf8(value[1..].to_vec()) {
-                    Ok(value) => Role::Specifed(value),
-                    Err(_) => Role::NonExistent,
-                }
-            },
-            &[0xf1] => Role::NonExistent,
-            _ => Role::NonExistent,
-        }
-    }
-}
-#[derive(PartialEq, PartialOrd, Clone, Eq, Zeroize)]
-pub (crate) struct DatabaseAccess {
-    name: String,
-    document: Option<String>,
-    field: Option<String>,
-}
-
-type Blake3Hash = String;
-
-/// Scheme Control List //TODO
-#[derive(PartialEq, PartialOrd, Clone, Eq, Zeroize)]
-pub (crate) enum SchemeControlList {
-    Network(String),
-    File(String),
-    Database(DatabaseAccess),
-    Custom(Vec<u8>),
-    TlsCertificate(String),
-    Hash(Blake3Hash),
-}
-
-#[derive(PartialEq, PartialOrd, Clone, Eq, Zeroize, Debug)]
-pub (crate) enum AccessControlList {
-    Create,
-    Read,
-    Write,
-    Execute,
-    NoAccess,
-}
-
-#[derive(Zeroize, Clone)]
-pub (crate) struct TaiTimeStamp(TAI64N); // TODO see how to make the TAI64 Standalone
-
-impl TaiTimeStamp {
+impl TaiTimestamp {
     pub fn now() -> Self {
         Self(TAI64N::now())
     }
-    pub fn get_bytes(&self) -> secrecy::SecretVec<u8> {
-        secrecy::SecretVec::new(self.0.to_bytes().to_vec())
-    }
 }
+
+#[derive(Zeroize, Clone, Serialize, Deserialize)]
+pub struct Identifier(pub (crate) String);
 
 impl secrecy::DebugSecret for Lease {}
 impl secrecy::DebugSecret for Role {}
-impl secrecy::DebugSecret for AccessControlList {}
-impl secrecy::DebugSecret for SchemeControlList {}
-impl secrecy::DebugSecret for TaiTimeStamp {}
+impl secrecy::DebugSecret for TaiTimestamp {}
+impl secrecy::DebugSecret for Identifier {}
+
+impl secrecy::SerializableSecret for TaiTimestamp {}
+impl secrecy::SerializableSecret for Role {}
+impl secrecy::SerializableSecret for Lease {}
+impl secrecy::SerializableSecret for Identifier {}
 
 impl secrecy::CloneableSecret for Lease {}
 impl secrecy::CloneableSecret for Role {}
-impl secrecy::CloneableSecret for AccessControlList {}
-impl secrecy::CloneableSecret for SchemeControlList {}
-impl secrecy::CloneableSecret for TaiTimeStamp {}
+impl secrecy::CloneableSecret for TaiTimestamp {}
+impl secrecy::CloneableSecret for Identifier {}
 
 pub enum GcExec {
     Hit,
     Miss,
     MalformedOperation,
 }
+
+pub enum SgStatusCode {
+    AuthenticToken,
+    AuthorizedToken,
+    Revoked,
+    Rejected,
+    AccessGranted,
+    AccessDenied,
+    BadDeserialize,
+    BadSerialize,
+    TuringDbOp(anyhow::Error),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Ping {
+    Unreachable,
+    Online,
+    Offline,
+    //Varied, //TODO add ping ms
+}
+
+use turingdb::TuringEngine;
+use async_trait::async_trait;
+#[async_trait]
+pub trait SecurityCheck {
+    fn generate_token() -> Self;
+
+    async fn issue(self, db_engine: &TuringEngine) -> Result<crate::tokens::PrngToken>;
+
+    async fn authorize(key: &str, db_engine: &TuringEngine) -> Result<SgStatusCode>;
+
+    async fn authenticate(key: &str, db_engine: &TuringEngine) -> Result<SgStatusCode>;
+
+    async fn revoke(key: &str, db_engine: &TuringEngine) -> Result<SgStatusCode>;
+}
+
