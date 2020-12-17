@@ -3,10 +3,11 @@ use zeroize::Zeroize;
 use tai64::TAI64N;
 use serde::{Serialize, Deserialize};
 use anyhow::Result;
+use secrecy::{SecretString, ExposeSecret};
 
 pub (crate) const CONFIG_FILE: &str = "./SchemeGuardian/SchemeGuardianConf.toml";
-pub (crate) const TOKEN_DB_PATH: &str = "./SchemeGuardian/TuringDB_Repo/TokenStorage";
-pub (crate) const TOKEN_SESSION_DOCUMENT: &str = "./SchemeGuardian/TuringDB_Repo/TokenStorage/SessionStorage";
+pub const TOKEN_DB_PATH: &str = "../TuringDB_Repo/TokenStorage";
+pub const TOKEN_SESSION_DOCUMENT: &str = "../TuringDB_Repo/TokenStorage/SessionStorage";
 pub (crate) const GC_REGISTRY: &str = "GcRegistry";
 pub (crate) const GC_STORAGE: &str = "GcStorage";
 pub (crate) type TimeStamp = TAI64N;
@@ -120,12 +121,60 @@ pub enum Role {
     Specifed(String),
 }
 
+
+impl Role {
+    pub fn to_header(value: &Role) -> Vec<u8> {
+        match value {
+            &Role::SuperUser => vec![0x00],
+            &Role::Admin => vec![0x01],
+            &Role::SubAdmin => vec![0x02],
+            &Role::User => vec![0x03],
+            Role::Specifed(custom) => {
+                let mut data = Vec::new();
+                data.extend_from_slice(&[0x04]);
+                data.extend_from_slice(custom.as_bytes());
+
+                data
+            },
+        }
+    }
+
+    pub fn from_header(value: &[u8]) -> Role {
+        match value {
+            &[0x00] => Role::SuperUser,
+            &[0x01] => Role::Admin,
+            &[0x02] => Role::SubAdmin,
+            &[0x03] => Role::User,
+            &[0x04] => {
+                match String::from_utf8(value[1..].to_vec()) {
+                    Ok(value) => Role::Specifed(value),
+                    Err(_) => Role::User,
+                }
+            },
+            _ => Role::User,
+        }
+    }
+}
+
+
+/// Transform `hex` value into `blake3::Hash`
+pub fn to_blake3(hex: &SecretString) -> Result<blake3::Hash> {
+    let hash_bytes = hex::decode(hex.expose_secret())?;
+    let hash_array: [u8; blake3::OUT_LEN] = hash_bytes[..].try_into()?;
+    let hash: blake3::Hash = hash_array.into();
+
+    Ok(hash)
+}
+
 #[derive(Zeroize, Clone, Serialize, Deserialize)]
 pub (crate) struct TaiTimestamp(TAI64N); // TODO see how to make the TAI64 Standalone
 
 impl TaiTimestamp {
     pub fn now() -> Self {
         Self(TAI64N::now())
+    }
+    pub fn get_bytes(&self) -> secrecy::SecretVec<u8> {
+        secrecy::SecretVec::new(self.0.to_bytes().to_vec())
     }
 }
 
@@ -153,6 +202,7 @@ pub enum GcExec {
     MalformedOperation,
 }
 
+#[derive(Debug)]
 pub enum SgStatusCode {
     AuthenticToken,
     AuthorizedToken,
@@ -177,9 +227,7 @@ use turingdb::TuringEngine;
 use async_trait::async_trait;
 #[async_trait]
 pub trait SecurityCheck {
-    fn generate_token() -> Self;
-
-    async fn issue(self, db_engine: &TuringEngine) -> Result<crate::tokens::PrngToken>;
+    async fn issue(self, db_engine: &TuringEngine) -> Result<secrecy::SecretString>;
 
     async fn authorize(key: &str, db_engine: &TuringEngine) -> Result<SgStatusCode>;
 

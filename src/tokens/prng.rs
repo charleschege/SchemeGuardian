@@ -1,4 +1,4 @@
-use crate::global::{
+use crate::{global::{
     TaiTimestamp,
     Lease,
     Role,
@@ -7,9 +7,9 @@ use crate::global::{
     TOKEN_SESSION_DOCUMENT,
     TOKEN_DB_PATH,
     Identifier,
-};
+}, to_blake3};
 
-use secrecy::{Secret, ExposeSecret};
+use secrecy::{Secret, ExposeSecret, SecretString};
 use turingdb::TuringEngine;
 use custom_codes::DbOps;
 use anyhow::Result;
@@ -43,29 +43,38 @@ impl Default for PrngToken {
 use async_trait::async_trait;
 #[async_trait]
 impl crate::global::SecurityCheck for PrngToken {
-    fn generate_token() -> Self {
-        
-        Self::default()
-    }
     /// Create a token
-    async fn issue(self, db_engine: &TuringEngine) -> Result<Self> {
+    async fn issue(self, db_engine: &TuringEngine) -> Result<SecretString> {
         let data = bincode::serialize::<Self>(&self)?;
+
+        // Take only the `identifier`, `timestamp`, `role` and `lease`
+        let mut token_hash = blake3::Hasher::new();
+        token_hash.update(self.identifier.expose_secret().0.as_bytes());
+        token_hash.update(self.timestamp.expose_secret().get_bytes().expose_secret());
+        token_hash.update(&Role::to_header(self.role.expose_secret()));
+        token_hash.update(&Lease::to_header(self.lease.expose_secret()));
+
+        let hashed_token = token_hash.finalize();
 
         TuringEngine::field_insert(db_engine, 
             TOKEN_DB_PATH.as_ref(),
             TOKEN_SESSION_DOCUMENT.as_ref(),
-            blake3::hash(self.identifier.expose_secret().0.as_bytes()).as_bytes(),
+            hashed_token.as_bytes(),
             &data,
         ).await?;
 
-        Ok(self)
+
+        Ok(SecretString::new(hex::encode(hashed_token.as_bytes())))
     }
 
     async fn authenticate(key: &str, db_engine: &TuringEngine) -> Result<SgStatusCode> {
+        let hashed_token = to_blake3(&SecretString::new(key.into()))?;
+        dbg!(&hashed_token);
+
         match TuringEngine::field_get(db_engine, 
             TOKEN_DB_PATH.as_ref(), 
         TOKEN_SESSION_DOCUMENT.as_ref(), 
-        blake3::hash(key.as_bytes()).as_bytes()
+        hashed_token.as_bytes(),
         ).await?{
             DbOps::FieldContents(_) => Ok(SgStatusCode::AuthenticToken),
             _ => Ok(SgStatusCode::Rejected)
